@@ -16,6 +16,26 @@ export interface FileSlice {
   entity: { kind: string; id: string } | null;
 }
 
+/** An entity file's location in the corpus, matching what `FileSlice.entity` reports. */
+export type CorpusEntity = { kind: "person" | "project" | "document" | "decision"; id: string };
+
+const ENTITY_DIRS: Record<string, CorpusEntity["kind"]> = {
+  people: "person",
+  projects: "project",
+  documents: "document",
+  decisions: "decision",
+};
+
+/** The entity a corpus path points at: `documents/ZOOM-001.md` -> document ZOOM-001. */
+export function entityForPath(path: string): CorpusEntity | null {
+  const parts = path.split("/");
+  if (parts.length !== 2) return null;
+  const kind = ENTITY_DIRS[parts[0]];
+  if (!kind) return null;
+  const id = parts[1].replace(/\.md$/, "");
+  return id ? { kind, id } : null;
+}
+
 /** Lines of context shown on each side of a cited range. */
 export const CONTEXT_LINES = 3;
 

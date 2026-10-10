@@ -94,6 +94,17 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="unknown document")
         return doc.to_detail_dict()
 
+    @app.get("/decisions")
+    def list_decisions() -> list[dict]:
+        return [decision.to_dict() for decision in catalog.decisions()]
+
+    @app.get("/decisions/{decision_id}")
+    def get_decision(decision_id: str) -> dict:
+        decision = catalog.decision(decision_id)
+        if decision is None:
+            raise HTTPException(status_code=404, detail="unknown decision")
+        return decision.to_dict()
+
     @app.get("/files/{path:path}")
     def get_file(path: str, start: int = 1, end: int | None = None) -> dict:
         try:

@@ -4,8 +4,8 @@ import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
 import { PersonLink, ProjectLink } from "@/components/RecordMeta";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { decisionById } from "@/data/decisions";
 import { documentById } from "@/data/documents";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 /** Source-detail drawer opened from any citation chip. */
 export function SourceDrawer() {
   const { source, closeSource, navigate } = useUI();
+  const { decisionById } = useCatalog();
   const doc = source ? documentById(source.artifactId) : undefined;
   const cited = doc?.excerpts.find((e) => e.id === source?.excerptId) ?? doc?.excerpts[0];
   const others = doc?.excerpts.filter((e) => e.id !== cited?.id) ?? [];

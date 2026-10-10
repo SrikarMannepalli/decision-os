@@ -4,8 +4,7 @@ import { DecisionStatusBadge, DispositionBadge } from "@/components/DecisionStat
 import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
 import { RichText } from "@/components/RichText";
 import { PersonLink, ProjectLink } from "@/components/RecordMeta";
-import { decisionById } from "@/data/decisions";
-import { documentById } from "@/data/documents";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
 import type { Decision } from "@/types";
@@ -21,6 +20,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function DecisionIdList({ ids }: { ids: string[] }) {
   const { navigate } = useUI();
+  const { decisionById } = useCatalog();
   if (ids.length === 0) return <p className="text-sm text-muted">None</p>;
   return (
     <ul className="space-y-1 text-sm">
@@ -38,6 +38,7 @@ function DecisionIdList({ ids }: { ids: string[] }) {
 
 export function DecisionDetail({ decision }: { decision: Decision }) {
   const { openSource } = useUI();
+  const { documentById } = useCatalog();
   const isFinal = decision.finalDecision !== null;
   const docs = decision.artifactIds.map((id) => documentById(id)).filter((d) => d !== undefined);
 
@@ -170,7 +171,7 @@ export function DecisionDetail({ decision }: { decision: Decision }) {
         <Section title="Supporting evidence">
           <ul className="space-y-2">
             {docs.map((doc) => {
-              const key = doc.excerpts[0];
+              const key = doc.excerpts?.[0];
               return (
                 <li key={doc.id} className="rounded-md border border-border px-3 py-2.5 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
