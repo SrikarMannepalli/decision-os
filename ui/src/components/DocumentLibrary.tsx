@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { documents } from "@/data/documents";
-import { projectById, projects } from "@/data/projects";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
@@ -79,7 +78,7 @@ function DecisionLinks({ doc }: { doc: Document }) {
 
 export function DocumentLibrary() {
   const { navigate } = useUI();
-  const { personName } = useCatalog();
+  const { personName, projectName, projects } = useCatalog();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const set = (patch: Partial<Filters>) => setFilters((prev) => ({ ...prev, ...patch }));
 
@@ -186,7 +185,7 @@ export function DocumentLibrary() {
                     <div className="truncate text-sm font-medium">{doc.title}</div>
                   </div>
                   <div role="cell" className="min-w-0 truncate text-sm text-muted">
-                    {projectById(doc.projectId)?.name ?? doc.projectId}
+                    {projectName(doc.projectId)}
                   </div>
                   <div role="cell" className="min-w-0">
                     <AuthorStack doc={doc} />
@@ -224,7 +223,7 @@ export function DocumentLibrary() {
                     </div>
                     <div className="text-sm font-medium">{doc.title}</div>
                     <div className="text-xs text-muted">
-                      {projectById(doc.projectId)?.name} · {formatDate(doc.createdAt)}
+                      {projectName(doc.projectId)} · {formatDate(doc.createdAt)}
                     </div>
                     <AuthorStack doc={doc} />
                     <DecisionLinks doc={doc} />

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { decisions } from "@/data/decisions";
-import { projects } from "@/data/projects";
 import { useCatalog } from "@/hooks/useCatalog";
 import type { DecisionStatus } from "@/types";
 
@@ -32,7 +31,7 @@ interface Props {
 }
 
 export function DecisionFilters({ value, onChange }: Props) {
-  const { personName } = useCatalog();
+  const { personName, projects } = useCatalog();
   const set = <K extends keyof DecisionFilterState>(key: K, v: DecisionFilterState[K]) => onChange({ ...value, [key]: v });
 
   return (

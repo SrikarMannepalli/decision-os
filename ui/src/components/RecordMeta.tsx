@@ -1,11 +1,11 @@
 import { PersonAvatar, PersonName } from "@/components/PersonAvatar";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
-import { projectById } from "@/data/projects";
 
 /** Project name that links to the Projects view. */
 export function ProjectLink({ projectId }: { projectId: string }) {
   const { navigate } = useUI();
-  const project = projectById(projectId);
+  const project = useCatalog().projectById(projectId);
   return (
     <button
       type="button"
