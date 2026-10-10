@@ -1,6 +1,6 @@
 # ADR-0003: Retrieval is a conversation with citations
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-10
 - Supersedes: [ADR-0002](0002-retrieval-is-a-read-only-pi-session.md)
 - Superseded by: none
