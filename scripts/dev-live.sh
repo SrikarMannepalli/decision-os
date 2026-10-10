@@ -179,7 +179,7 @@ fi
 say "starting the UI on :$ui_port"
 (
   cd ui
-  VITE_DECISIONOS_MODE=live DECISIONOS_API_URL="http://localhost:$api_port" \
+  DECISIONOS_API_URL="http://localhost:$api_port" \
     exec node_modules/.bin/vite --port "$ui_port" --strictPort >"$log_dir/ui.log" 2>&1
 ) &
 ui_pid=$!

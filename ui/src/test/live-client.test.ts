@@ -52,8 +52,6 @@ describe("live client", () => {
     const { answer, text } = await createLiveClient({ fetchImpl }).queryDecisionOS("ui-1", "why?", []);
     expect(answer.confidence).toBe("grounded");
     expect(answer.sources).toEqual([{ path: "decisions/2024-04-02-x.md", lines: [4, 9] }]);
-    expect(answer.decisionIds).toEqual([]);
-    expect(answer.evidence).toEqual([]);
     expect(text).toContain("decisions/2024-04-02-x.md (lines 4–9)");
   });
 

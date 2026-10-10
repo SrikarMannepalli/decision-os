@@ -2,8 +2,13 @@ import { useEffect, useRef } from "react";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, ThinkingIndicator } from "@/components/ChatMessage";
 import { useChat } from "@/hooks/useChat";
-import { isLiveMode } from "@/services/decisionOSService";
-import { SUGGESTED_PROMPTS } from "@/services/mockRetrieval";
+
+const SUGGESTED_PROMPTS = [
+  "Why did we delay large-account reconciliation?",
+  "What did we decide about bulk invoice actions?",
+  "Which decisions are still unresolved?",
+  "What alternatives did we consider for cash-flow forecasts?",
+];
 
 export function ChatView() {
   const { active, isThinking, send, retry } = useChat();
@@ -28,7 +33,7 @@ export function ChatView() {
           <div className="mt-8">
             <ChatInput onSubmit={send} autoFocus />
           </div>
-          <div className={isLiveMode ? "hidden" : "mt-4 grid gap-2 sm:grid-cols-2"} role="group" aria-label="Suggested questions">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2" role="group" aria-label="Suggested questions">
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
                 key={prompt}
@@ -41,9 +46,7 @@ export function ChatView() {
             ))}
           </div>
           <p className="mt-6 text-center text-xs text-muted">
-            {isLiveMode
-              ? "Answers come from the DecisionOS backend and cite the corpus files they read."
-              : "Answers come from seeded FinFlow documents using deterministic keyword matching — not an LLM."}
+            Answers come from the DecisionOS backend and cite the corpus files they read.
           </p>
         </div>
       </div>
@@ -59,7 +62,6 @@ export function ChatView() {
               key={message.id}
               message={message}
               isLast={i === active.messages.length - 1}
-              onFollowUp={send}
               onRetry={retry}
               disabled={isThinking}
             />

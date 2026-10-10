@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { knownArtifactIds } from "@/data/documents";
 import type { RichTextLookups } from "@/lib/richText";
-import { createLiveCatalogSource, seedCatalogSource, type CatalogSource } from "@/services/catalogApi";
-import { isLiveMode } from "@/services/decisionOSService";
+import { createLiveCatalogSource, type CatalogSource } from "@/services/catalogApi";
 import type { Decision, Document, DocumentDetail, Employee, Project } from "@/types";
 
 export type CatalogStatus = "loading" | "ready" | "error";
@@ -69,9 +67,9 @@ export function buildDecisionsLookup(decisions: Decision[]): DecisionsLookup {
   };
 }
 
-/** Which ids a rich-text citation may link to. Unknown documents still resolve through the seed ids. */
+/** Which ids a rich-text citation may link to. */
 export function buildRichTextLookups(documents: Document[], decisions: Decision[]): RichTextLookups {
-  const ids = new Set([...knownArtifactIds, ...documents.map((doc) => doc.id)]);
+  const ids = new Set(documents.map((doc) => doc.id));
   const decisionIds = new Set(decisions.map((decision) => decision.id));
   return {
     isArtifact: (id) => ids.has(id),
@@ -79,7 +77,7 @@ export function buildRichTextLookups(documents: Document[], decisions: Decision[
   };
 }
 
-const defaultSource: CatalogSource = isLiveMode ? createLiveCatalogSource() : seedCatalogSource;
+const defaultSource: CatalogSource = createLiveCatalogSource();
 
 const CatalogContext = createContext<Catalog | null>(null);
 

@@ -1,20 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
 
-const SWAPS = [
-  {
-    name: "Answer service",
-    detail: "Implement the DecisionOSClient interface in services/decisionOSService.ts against a real API and replace mockDecisionOSClient.",
-  },
-  {
-    name: "Retrieval backend",
-    detail: "Replace the keyword and intent matcher in services/mockRetrieval.ts with retrieval over an indexed corpus and an LLM that cites sources.",
-  },
-  {
-    name: "Document ingestion",
-    detail: "Replace the seeded files in data/ with a pipeline that ingests meetings, Slack threads, PRDs, ADRs, and design docs.",
-  },
-];
-
 export function SettingsPage() {
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -27,7 +12,7 @@ export function SettingsPage() {
               <dt className="text-muted">Name</dt>
               <dd>FinFlow</dd>
               <dt className="text-muted">Data source</dt>
-              <dd>Local seeded mock data</dd>
+              <dd>DecisionOS API over the markdown corpus</dd>
               <dt className="text-muted">Editing</dt>
               <dd className="text-muted">Read-only. Workspace settings are not implemented.</dd>
             </dl>
@@ -36,22 +21,21 @@ export function SettingsPage() {
           <section className="rounded-lg border border-border bg-surface p-5">
             <h2 className="text-sm font-semibold">How answers are produced</h2>
             <p className="mt-2 text-sm text-muted">
-              This prototype runs on a local, deterministic mock-data layer. There is no LLM, no backend, and no API key. Answers come from keyword
-              and intent matching over the seeded FinFlow documents. It is not semantic search, and it can only answer about the seeded decisions.
+              Every page — chat, the Decision Log, Documents, Projects and People — reads the FastAPI backend, which serves the
+              FinFlow corpus. Chat questions go to the conversation endpoints, where a read-only agent searches the corpus and
+              answers with the file paths and lines it used. Asking a question needs <code className="rounded bg-subtle px-1 py-0.5 font-mono text-xs">ROUTERPLUS_API_KEY</code>;
+              the other pages work without it.
             </p>
           </section>
 
           <section className="rounded-lg border border-border bg-surface p-5">
-            <h2 className="text-sm font-semibold">What a real integration would replace</h2>
-            <ul className="mt-3 flex flex-col gap-3">
-              {SWAPS.map((s) => (
-                <li key={s.name} className="text-sm">
-                  <span className="font-medium">{s.name}</span>
-                  <span className="ml-2 rounded bg-neutral-soft px-1.5 py-0.5 text-xs text-muted">Not implemented</span>
-                  <p className="mt-0.5 text-muted">{s.detail}</p>
-                </li>
-              ))}
-            </ul>
+            <h2 className="text-sm font-semibold">Running it</h2>
+            <p className="mt-2 text-sm text-muted">
+              Start the API (<code className="rounded bg-subtle px-1 py-0.5 font-mono text-xs">uvicorn decisionos.main:app --port 8000</code> from the repo
+              root) and then <code className="rounded bg-subtle px-1 py-0.5 font-mono text-xs">npm run dev</code> here; the dev server proxies
+              <code className="mx-1 rounded bg-subtle px-1 py-0.5 font-mono text-xs">/api</code> to it. Or use
+              <code className="mx-1 rounded bg-subtle px-1 py-0.5 font-mono text-xs">scripts/dev-live.sh</code> from the repo root, which starts both.
+            </p>
           </section>
         </div>
       </div>

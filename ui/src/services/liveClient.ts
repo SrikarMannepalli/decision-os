@@ -26,18 +26,13 @@ export function turnToAnswer(turn: BackendTurn): AssistantAnswer {
     // An answer that cites nothing cannot be checked, so it is not shown as grounded.
     confidence: sources.length > 0 ? "grounded" : "insufficient",
     directAnswer: turn.answer.trim(),
-    sections: [],
-    decisionIds: [],
-    evidence: [],
-    personIds: [],
-    suggestions: [],
     sources,
   };
 }
 
 function toPlainText(answer: AssistantAnswer): string {
   const lines = [answer.directAnswer];
-  if (answer.sources?.length) {
+  if (answer.sources.length) {
     lines.push("", "Sources:", ...answer.sources.map((s) => `- ${s.path} (${formatLines(s.lines)})`));
   }
   return lines.join("\n");

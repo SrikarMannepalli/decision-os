@@ -1,5 +1,4 @@
 import { CalendarClock, PanelRightClose } from "lucide-react";
-import { CitationChip } from "@/components/CitationChip";
 import { CorpusSources } from "@/components/ChatMessage";
 import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
@@ -16,7 +15,7 @@ function latestAnswer(messages: { answer?: AssistantAnswer }[] | undefined): Ass
   if (!messages) return null;
   for (let i = messages.length - 1; i >= 0; i--) {
     const a = messages[i].answer;
-    if (a && (a.decisionIds.length > 0 || (a.sources?.length ?? 0) > 0)) return a;
+    if (a && a.sources.length > 0) return a;
   }
   return null;
 }
@@ -46,25 +45,24 @@ export function ContextPanelBody() {
     );
   }
 
-  // Live answers cite corpus paths: derive the entities behind them via `entity`
+  // Answers cite corpus paths: derive the entities behind them via `entity`
   // (the same ids the file endpoint reports), then the people and projects those connect to.
-  const cited = answer.sources ? relatedEntitiesFromCitations(answer.sources, { decisionById, documentById }) : null;
+  const cited = relatedEntitiesFromCitations(answer.sources, { decisionById, documentById });
 
   const decisionsById = new Map<string, Decision>();
-  for (const d of [...answer.decisionIds.map((id) => decisionById(id)), ...(cited?.decisions ?? [])]) {
-    if (d) decisionsById.set(d.id, d);
+  for (const d of cited.decisions) {
+    decisionsById.set(d.id, d);
   }
   const decisions = [...decisionsById.values()];
-  const projectIds = [...new Set([...decisions.map((d) => d.projectId), ...(cited?.projectIds ?? [])])];
+  const projectIds = [...new Set([...decisions.map((d) => d.projectId), ...cited.projectIds])];
   const followUps = decisions.flatMap((d) => d.followUps.filter((f) => f.status === "Open").map((f) => ({ ...f, decisionId: d.id })));
-  const evidenceDocs = answer.evidence.map((e) => ({ ref: e, doc: documentById(e.artifactId) })).filter((x) => x.doc);
-  const citedDocs = cited?.documents ?? [];
-  const personIds = [...new Set([...answer.personIds, ...(cited?.personIds ?? [])])];
+  const citedDocs = cited.documents;
+  const personIds = [...new Set(cited.personIds)];
 
   if (decisions.length === 0 && citedDocs.length === 0 && personIds.length === 0) {
     return (
       <Group title="Cited sources">
-        <CorpusSources sources={answer.sources ?? []} heading={false} />
+        <CorpusSources sources={answer.sources} heading={false} />
       </Group>
     );
   }
@@ -101,25 +99,6 @@ export function ContextPanelBody() {
           ))}
         </ul>
       </Group>
-
-      {evidenceDocs.length > 0 ? (
-        <Group title="Source documents">
-          <ul className="space-y-2">
-            {evidenceDocs.map(({ ref, doc }) => (
-              <li key={ref.artifactId} className="flex items-start gap-2 text-sm">
-                <DocumentTypeIcon type={doc!.type} className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
-                <span className="min-w-0">
-                  <span className="block leading-snug">{doc!.title}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
-                    <CitationChip artifactId={ref.artifactId} excerptId={ref.excerptId} className="mx-0" />
-                    {doc!.type}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Group>
-      ) : null}
 
       {citedDocs.length > 0 ? (
         <Group title="Cited documents">

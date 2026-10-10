@@ -1,7 +1,3 @@
-import { decisions as seedDecisions } from "@/data/decisions";
-import { documents, documentById } from "@/data/documents";
-import { employees } from "@/data/employees";
-import { projects as seedProjects } from "@/data/projects";
 import type { Decision, Document, DocumentDetail, Employee, Project } from "@/types";
 import { BackendError, createApiClient, failure, type ApiClient, type ApiClientOptions } from "./apiClient";
 
@@ -138,17 +134,3 @@ export function createLiveCatalogSource(options: ApiClientOptions = {}): Catalog
   };
 }
 
-export const seedCatalogSource: CatalogSource = {
-  initialPeople: employees,
-  initialProjects: seedProjects,
-  initialDocuments: documents,
-  initialDecisions: seedDecisions,
-  loadPeople: async () => employees,
-  loadProjects: async () => seedProjects,
-  loadDocuments: async () => documents,
-  loadDecisions: async () => seedDecisions,
-  loadDocument: async (id) => {
-    const doc = documentById(id);
-    return doc?.content !== undefined ? (doc as DocumentDetail) : undefined;
-  },
-};
