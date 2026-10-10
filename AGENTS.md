@@ -17,7 +17,9 @@ The HTTP API is Python and FastAPI. The retrieval loop is a Pi session per conve
 
 Prerequisites: Python ≥ 3.11 (with `venv`) and Node ≥ 22. The verify script
 creates `.venv` itself. The live sidecar needs one-time `npm install` in
-`agent/`; offline tests do not need it.
+`agent/`, a `ROUTERPLUS_API_KEY` in the environment (models route through the
+Anthropic-compatible RouterPlus provider in `~/.pi/agent/models.json`), and
+runs on the haiku model id listed there; offline tests do not need any of it.
 
 ## Commands
 

@@ -15,6 +15,7 @@ import {
 	createAgentSession,
 	DefaultResourceLoader,
 	getAgentDir,
+	ModelRuntime,
 	SessionManager,
 } from "@earendil-works/pi-coding-agent";
 
@@ -27,6 +28,14 @@ Rules:
 - If the corpus does not answer the question, say so plainly. Do not invent.
 - This directory is read-only. You have no tools that write; do not try.`;
 
+// Retrieval is high-volume, low-difficulty work, so the sidecar runs on a
+// small, fast model. The RouterPlus endpoint and the anthropic provider
+// override live in ~/.pi/agent/models.json; the key comes from the
+// ROUTERPLUS_API_KEY environment variable. Override the model id with
+// DECISIONOS_AGENT_MODEL when RouterPlus names its haiku differently.
+const MODEL_PROVIDER = "anthropic";
+const MODEL_ID = process.env.DECISIONOS_AGENT_MODEL ?? "claude-haiku-5-5";
+
 /** conversationId -> { corpus, session, unsubscribe } */
 const conversations = new Map();
 
@@ -37,7 +46,7 @@ function relativeTo(corpus, path) {
 		: path.replace(/^\/+/, "");
 }
 
-async function getConversation(conversationId, corpus) {
+async function getConversation(conversationId, corpus, model, modelRuntime) {
 	const existing = conversations.get(conversationId);
 	if (existing) {
 		if (existing.corpus !== corpus) {
@@ -63,6 +72,11 @@ async function getConversation(conversationId, corpus) {
 	const { session } = await createAgentSession({
 		cwd: corpus,
 		tools: ["read", "grep", "find", "ls"],
+		model,
+		modelRuntime,
+		// Plain question answering over files; extended thinking only adds
+		// latency and cost on this loop.
+		thinkingLevel: "off",
 		sessionManager: SessionManager.inMemory(corpus),
 		resourceLoader: loader,
 	});
@@ -80,8 +94,13 @@ function assistantText(message) {
 		.trim();
 }
 
-async function ask({ conversationId, corpus, question }) {
-	const { session } = await getConversation(conversationId, corpus);
+async function ask({ conversationId, corpus, question }, model, modelRuntime) {
+	const { session } = await getConversation(
+		conversationId,
+		corpus,
+		model,
+		modelRuntime,
+	);
 
 	// Citations are per turn: only the read calls this turn's loop makes.
 	const opened = new Map(); // path -> [minLine, maxLine]
@@ -142,6 +161,15 @@ async function ask({ conversationId, corpus, question }) {
 }
 
 async function main() {
+	const modelRuntime = await ModelRuntime.create();
+	const model = modelRuntime.getModel(MODEL_PROVIDER, MODEL_ID);
+	if (!model) {
+		throw new Error(
+			`model ${MODEL_PROVIDER}/${MODEL_ID} is not registered; ` +
+				"check ~/.pi/agent/models.json",
+		);
+	}
+
 	const rl = readline.createInterface({
 		input: process.stdin,
 		crlfDelay: Infinity,
@@ -160,7 +188,7 @@ async function main() {
 			continue;
 		}
 		try {
-			const { answer, citations } = await ask(request);
+			const { answer, citations } = await ask(request, model, modelRuntime);
 			respond({ id: request.id, ok: true, answer, citations });
 		} catch (error) {
 			respond({
