@@ -3,13 +3,14 @@ import { CitationChip } from "@/components/CitationChip";
 import { DispositionBadge } from "@/components/DecisionStatusBadge";
 import { PersonAvatar, PersonName } from "@/components/PersonAvatar";
 import { RichText } from "@/components/RichText";
-import { employeeById } from "@/data/employees";
 import { formatDate } from "@/lib/format";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import type { AnswerSection as AnswerSectionData } from "@/types";
 
 export function AnswerSection({ section }: { section: AnswerSectionData }) {
   const { navigate } = useUI();
+  const { personById } = useCatalog();
   return (
     <section aria-labelledby={`sec-${section.kind}-${section.title}`} className="mt-5">
       <h3 id={`sec-${section.kind}-${section.title}`} className="mb-1.5 text-[13px] font-semibold text-foreground">
@@ -49,7 +50,7 @@ export function AnswerSection({ section }: { section: AnswerSectionData }) {
       {section.people ? (
         <ul className="grid gap-2 sm:grid-cols-2">
           {section.people.map((p) => {
-            const employee = employeeById(p.employeeId);
+            const employee = personById(p.employeeId);
             return (
               <li key={p.employeeId}>
                 <button

@@ -1,7 +1,7 @@
 import { CitationChip } from "@/components/CitationChip";
 import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
-import { employeeById } from "@/data/employees";
 import { projectById } from "@/data/projects";
+import { useCatalog } from "@/hooks/useCatalog";
 import { formatDate } from "@/lib/format";
 import type { Decision } from "@/types";
 
@@ -25,7 +25,7 @@ export function DecisionTableHeader() {
 /** Table row on md+, stacked card below. Title button stretches over the row; chips sit above it. */
 export function DecisionCard({ decision, onOpen }: { decision: Decision; onOpen: (id: string) => void }) {
   const project = projectById(decision.projectId);
-  const owner = employeeById(decision.ownerId);
+  const owner = useCatalog().personById(decision.ownerId);
   const label = "text-xs text-muted md:hidden";
   return (
     <div

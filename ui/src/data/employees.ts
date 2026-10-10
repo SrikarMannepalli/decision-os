@@ -14,11 +14,3 @@ export const employees: Employee[] = [
 ];
 
 export const employeeById = (id: string): Employee | undefined => employees.find((e) => e.id === id);
-
-export const initials = (name: string): string =>
-  name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();

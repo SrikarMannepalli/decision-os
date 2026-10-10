@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { ChatView } from "@/components/ChatView";
+import { CatalogProvider } from "@/hooks/useCatalog";
 import { ChatProvider } from "@/hooks/useChat";
 import { UIProvider, useUI } from "@/hooks/useUI";
 import { DecisionLogPage } from "@/pages/DecisionLogPage";
@@ -29,11 +30,13 @@ function CurrentView() {
 export function App() {
   return (
     <UIProvider>
-      <ChatProvider>
-        <AppShell>
-          <CurrentView />
-        </AppShell>
-      </ChatProvider>
+      <CatalogProvider>
+        <ChatProvider>
+          <AppShell>
+            <CurrentView />
+          </AppShell>
+        </ChatProvider>
+      </CatalogProvider>
     </UIProvider>
   );
 }

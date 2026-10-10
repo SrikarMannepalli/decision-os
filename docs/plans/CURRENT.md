@@ -1,5 +1,5 @@
 # Current work
 
-- Task: none active. TASK-004 (file content endpoint and cited-source viewer) is done and in review on `TASK-004/file-content-endpoint`.
-- Next: `docs/plans/tasks/TASK-005.md` (people), after TASK-004 merges. Queue: 005 people, 006 projects, 007 documents, 008 decisions, 009 retire the seed (needs a human decision on offline `npm run dev`).
-- For the entity tasks: `corpus.ENTITY_KINDS` and `read_slice` already report `entity` for a valid `<kind dir>/<id>.md`; `frontmatter.split` is the shared parser. The UI has `services/apiClient.ts` (shared `get`/`post`, `BackendError`, `failure`) to build the catalog requests on.
+- Task: none active. TASK-005 (people endpoints and catalog provider) is done and in review on `TASK-005/people-endpoints`.
+- Next: `docs/plans/tasks/TASK-006.md` (projects), after TASK-005 merges. Queue: 006 projects, 007 documents, 008 decisions, 009 retire the seed (needs a human decision on offline `npm run dev`).
+- For the remaining entity tasks: `catalog.Catalog` (`src/decisionos/catalog.py`) is where each kind's loader goes, and `CatalogSource` in `ui/src/services/catalogApi.ts` plus `CatalogProvider` in `ui/src/hooks/useCatalog.tsx` is where each kind's live fetch goes. `frontmatter.split` is the shared parser.

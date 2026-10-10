@@ -7,7 +7,7 @@ import { PersonLink, ProjectLink } from "@/components/RecordMeta";
 import { Button } from "@/components/ui/button";
 import { decisionById } from "@/data/decisions";
 import { documentById } from "@/data/documents";
-import { employeeById } from "@/data/employees";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useChat } from "@/hooks/useChat";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
@@ -35,6 +35,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export function ContextPanelBody() {
   const { active } = useChat();
   const { navigate } = useUI();
+  const { personById, personName } = useCatalog();
   const answer = latestAnswer(active?.messages);
 
   if (!answer) {
@@ -75,7 +76,7 @@ export function ContextPanelBody() {
                   <DecisionStatusBadge status={d.status} />
                 </span>
                 <span className="mt-1 block text-sm font-medium leading-snug">{d.title}</span>
-                <span className="mt-0.5 block text-xs text-muted">Owner: {employeeById(d.ownerId)?.name}</span>
+                <span className="mt-0.5 block text-xs text-muted">Owner: {personName(d.ownerId)}</span>
               </button>
             </li>
           ))}
@@ -117,7 +118,7 @@ export function ContextPanelBody() {
             {answer.personIds.map((id) => (
               <li key={id} className="flex items-center gap-2">
                 <PersonLink employeeId={id} />
-                <span className="truncate text-xs text-muted">{employeeById(id)?.role}</span>
+                <span className="truncate text-xs text-muted">{personById(id)?.role}</span>
               </li>
             ))}
           </ul>
@@ -133,7 +134,7 @@ export function ContextPanelBody() {
               <li key={f.id} className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
                 <p className="leading-snug">{f.description}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-muted">
-                  <span>{employeeById(f.ownerId)?.name}</span>
+                  <span>{personName(f.ownerId)}</span>
                   <span className="font-mono">{f.decisionId}</span>
                   {f.dueDate ? (
                     <span className="inline-flex items-center gap-1 font-medium text-warn">

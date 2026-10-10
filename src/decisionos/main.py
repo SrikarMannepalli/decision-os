@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from .catalog import Catalog
 from .corpus import FileNotFound, InvalidPath, InvalidRange, read_slice
 from .retrieval import ConversationStore, UnknownConversation
 from .sidecar import SidecarAgent
@@ -27,6 +28,7 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
         agent = SidecarAgent()
     corpus_root = corpus or os.environ.get("DECISIONOS_CORPUS", str(DEFAULT_CORPUS))
     store = ConversationStore(agent, corpus_root)
+    catalog = Catalog(Path(corpus_root))
     if own_agent:
 
         @asynccontextmanager
@@ -38,6 +40,7 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
     else:
         app = FastAPI(title="DecisionOS")
     app.state.store = store
+    app.state.catalog = catalog
 
     @app.post("/conversations", status_code=201)
     def create_conversation() -> dict:
@@ -57,6 +60,17 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
         if conversation is None:
             raise HTTPException(status_code=404, detail="unknown conversation")
         return conversation.to_dict()
+
+    @app.get("/people")
+    def list_people() -> list[dict]:
+        return [person.to_dict() for person in catalog.people()]
+
+    @app.get("/people/{person_id}")
+    def get_person(person_id: str) -> dict:
+        person = catalog.person(person_id)
+        if person is None:
+            raise HTTPException(status_code=404, detail="unknown person")
+        return person.to_dict()
 
     @app.get("/files/{path:path}")
     def get_file(path: str, start: int = 1, end: int | None = None) -> dict:
