@@ -32,7 +32,7 @@ cd ui && npm test && npm run typecheck && npm run build
 - Also removed with the mock: `AnswerSection`, `SourceDrawer` (excerpt drawer), the mock-only `AssistantAnswer` fields (`sections`, `decisionIds`, `evidence`, `personIds`, `suggestions`) and the `Excerpt`/`SeedDocument` types. `CitationChip` now navigates to the document detail view; chat citations keep opening `CorpusSourceView` (`GET /files/{path}`).
 - Suggested prompt chips moved into `ChatView` as a static list and stay visible.
 - `scripts/dev-live.sh` no longer sets `VITE_DECISIONOS_MODE`.
-- Verified live without a model key: uvicorn over `corpus/finflow` + `npm run dev`; the proxy serves 10 people, 3 projects, 18 documents, 3 decisions; a chat turn without `ROUTERPLUS_API_KEY` 500s and the UI shows its error state with retry.
+- Verified live without a model key: uvicorn over `corpus/finflow` + `npm run dev`; the proxy serves 10 people, 3 projects, 18 documents, 3 decisions; a chat turn without `ROUTERPLUS_API_KEY` answers 503 with a human-readable detail ("Set ROUTERPLUS_API_KEY and restart the API.") that the chat error state shows verbatim.
 - Live end-to-end against the real Pi session still not run (no key in this environment); covered by the sidecar/jsonl suites and `live-client.test.ts`.
 - Design: `docs/design/corpus-catalog-api.md`
 - ADRs: `docs/adr/0004-corpus-entities-are-markdown-with-frontmatter.md`, `docs/adr/0003-retrieval-is-a-conversation-with-citations.md`

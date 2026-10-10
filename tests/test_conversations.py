@@ -155,3 +155,32 @@ def test_corpus_is_unchanged_after_a_conversation(client, corpus):
             json={"question": question},
         )
     assert corpus_digest(corpus) == before
+
+
+def test_agent_failure_is_503_with_the_cause(client, fake_agent):
+    from decisionos.sidecar import AgentError
+
+    fake_agent.fail_with = AgentError("Error: No API key found for anthropic.")
+    conversation_id = client.post("/conversations").json()["id"]
+    response = client.post(
+        f"/conversations/{conversation_id}/messages",
+        json={"question": "anything"},
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "The agent has no model key, so questions cannot be answered. "
+        "Set ROUTERPLUS_API_KEY and restart the API."
+    )
+
+
+def test_other_agent_failure_keeps_its_message(client, fake_agent):
+    from decisionos.sidecar import AgentError
+
+    fake_agent.fail_with = AgentError("agent sidecar exited: boom")
+    conversation_id = client.post("/conversations").json()["id"]
+    response = client.post(
+        f"/conversations/{conversation_id}/messages",
+        json={"question": "anything"},
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == "The agent could not answer: agent sidecar exited: boom"

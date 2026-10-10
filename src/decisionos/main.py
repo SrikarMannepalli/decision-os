@@ -12,13 +12,24 @@ from pydantic import BaseModel, Field
 from .catalog import Catalog
 from .corpus import FileNotFound, InvalidPath, InvalidRange, read_slice
 from .retrieval import ConversationStore, UnknownConversation
-from .sidecar import SidecarAgent
+from .sidecar import AgentError, SidecarAgent
 
 DEFAULT_CORPUS = Path("corpus").resolve()
 
 
 class MessageRequest(BaseModel):
     question: str = Field(min_length=1)
+
+
+def agent_detail(exc: AgentError) -> str:
+    """A 503 body a person can act on: say what failed and what to check."""
+    message = str(exc)
+    if "api key" in message.lower():
+        return (
+            "The agent has no model key, so questions cannot be answered. "
+            "Set ROUTERPLUS_API_KEY and restart the API."
+        )
+    return f"The agent could not answer: {message}"
 
 
 def create_app(agent=None, corpus: str | None = None) -> FastAPI:
@@ -52,6 +63,8 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
             turn = store.retrieve(conversation_id, request.question)
         except UnknownConversation:
             raise HTTPException(status_code=404, detail="unknown conversation")
+        except AgentError as exc:
+            raise HTTPException(status_code=503, detail=agent_detail(exc))
         return turn.to_dict()
 
     @app.get("/conversations/{conversation_id}")
