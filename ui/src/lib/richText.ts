@@ -1,19 +1,22 @@
-import { decisionById } from "@/data/decisions";
-import { knownArtifactIds } from "@/data/documents";
-
 export type RichToken =
   | { kind: "text"; text: string }
   | { kind: "cite"; id: string }
   | { kind: "decision"; id: string };
 
+/** What the caller knows about, so this module reads no data source of its own. */
+export interface RichTextLookups {
+  isArtifact: (id: string) => boolean;
+  isDecision: (id: string) => boolean;
+}
+
 const TOKEN_RE = /\[([A-Z]+-\d{3})\]|\b(DEC-\d{3})\b/g;
 
 /**
  * Splits text into plain text, citation markers ([ZOOM-001]) and decision IDs.
- * Markers that do not resolve to a seeded record stay as plain text, so the UI
- * can never render a clickable citation for a document that does not exist.
+ * Markers the lookups do not recognise stay as plain text, so the UI
+ * can never render a clickable citation for a record that does not exist.
  */
-export function tokenizeRichText(input: string): RichToken[] {
+export function tokenizeRichText(input: string, lookups: RichTextLookups): RichToken[] {
   const tokens: RichToken[] = [];
   let last = 0;
   for (const match of input.matchAll(TOKEN_RE)) {
@@ -21,8 +24,8 @@ export function tokenizeRichText(input: string): RichToken[] {
     const cite = match[1];
     const decision = match[2];
     let token: RichToken | null = null;
-    if (cite && knownArtifactIds.has(cite)) token = { kind: "cite", id: cite };
-    else if (decision && decisionById(decision)) token = { kind: "decision", id: decision };
+    if (cite && lookups.isArtifact(cite)) token = { kind: "cite", id: cite };
+    else if (decision && lookups.isDecision(decision)) token = { kind: "decision", id: decision };
     if (!token) continue;
     if (index > last) tokens.push({ kind: "text", text: input.slice(last, index) });
     tokens.push(token);

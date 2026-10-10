@@ -8,12 +8,12 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { decisionById, decisions } from "@/data/decisions";
-import { employeeById } from "@/data/employees";
 import { projectById } from "@/data/projects";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import type { Decision } from "@/types";
 
-function matches(d: Decision, f: DecisionFilterState): boolean {
+function matches(d: Decision, f: DecisionFilterState, personName: (id: string) => string): boolean {
   if (f.status && d.status !== f.status) return false;
   if (f.projectId && d.projectId !== f.projectId) return false;
   if (f.ownerId && d.ownerId !== f.ownerId) return false;
@@ -21,7 +21,7 @@ function matches(d: Decision, f: DecisionFilterState): boolean {
   if (f.to && d.updatedAt > f.to) return false;
   const q = f.query.trim().toLowerCase();
   if (!q) return true;
-  const haystack = [d.title, d.id, d.projectId, projectById(d.projectId)?.name, employeeById(d.ownerId)?.name, d.status]
+  const haystack = [d.title, d.id, d.projectId, projectById(d.projectId)?.name, personName(d.ownerId), d.status]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -30,9 +30,10 @@ function matches(d: Decision, f: DecisionFilterState): boolean {
 
 export function DecisionLogPage() {
   const { route, navigate } = useUI();
+  const { personName } = useCatalog();
   const [filters, setFilters] = useState<DecisionFilterState>(EMPTY_FILTERS);
 
-  const visible = useMemo(() => decisions.filter((d) => matches(d, filters)), [filters]);
+  const visible = useMemo(() => decisions.filter((d) => matches(d, filters, personName)), [filters, personName]);
   const selected = route.id ? decisionById(route.id) : undefined;
 
   return (

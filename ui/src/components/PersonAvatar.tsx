@@ -1,9 +1,9 @@
-import { employeeById, initials } from "@/data/employees";
+import { useCatalog } from "@/hooks/useCatalog";
+import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function PersonAvatar({ employeeId, size = "md", className }: { employeeId: string; size?: "sm" | "md" | "lg"; className?: string }) {
-  const employee = employeeById(employeeId);
-  const name = employee?.name ?? employeeId;
+  const { personName } = useCatalog();
   return (
     <span
       aria-hidden
@@ -15,11 +15,11 @@ export function PersonAvatar({ employeeId, size = "md", className }: { employeeI
         className,
       )}
     >
-      {initials(name)}
+      {initials(personName(employeeId))}
     </span>
   );
 }
 
 export function PersonName({ employeeId }: { employeeId: string }) {
-  return <>{employeeById(employeeId)?.name ?? employeeId}</>;
+  return <>{useCatalog().personName(employeeId)}</>;
 }

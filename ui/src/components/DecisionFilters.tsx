@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { decisions } from "@/data/decisions";
-import { employeeById } from "@/data/employees";
 import { projects } from "@/data/projects";
+import { useCatalog } from "@/hooks/useCatalog";
 import type { DecisionStatus } from "@/types";
 
 export interface DecisionFilterState {
@@ -32,6 +32,7 @@ interface Props {
 }
 
 export function DecisionFilters({ value, onChange }: Props) {
+  const { personName } = useCatalog();
   const set = <K extends keyof DecisionFilterState>(key: K, v: DecisionFilterState[K]) => onChange({ ...value, [key]: v });
 
   return (
@@ -68,7 +69,7 @@ export function DecisionFilters({ value, onChange }: Props) {
           <option value="">All owners</option>
           {ownerIds.map((id) => (
             <option key={id} value={id}>
-              {employeeById(id)?.name ?? id}
+              {personName(id)}
             </option>
           ))}
         </NativeSelect>

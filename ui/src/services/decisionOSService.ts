@@ -30,7 +30,7 @@ export const mockDecisionOSClient: DecisionOSClient = {
   async queryDecisionOS(_conversationId, question, conversationHistory) {
     await new Promise((resolve) => setTimeout(resolve, RESPONSE_DELAY_MS));
     const answer = answerQuestion(question, conversationHistory);
-    return { answer, text: answerToPlainText(answer) };
+    return { answer, text: answerToPlainText(answer, seedPersonName) };
   },
 };
 
@@ -42,21 +42,23 @@ export const queryDecisionOS = (conversationId: string, question: string, conver
 /** Synchronous variant used to build the seeded conversations at load time. */
 export function answerSync(question: string, conversationHistory: ChatMessage[]): QueryResult {
   const answer = answerQuestion(question, conversationHistory);
-  return { answer, text: answerToPlainText(answer) };
+  return { answer, text: answerToPlainText(answer, seedPersonName) };
 }
 
-export function answerToPlainText(answer: AssistantAnswer): string {
+export function answerToPlainText(answer: AssistantAnswer, personName: (id: string) => string): string {
   const lines: string[] = [answer.directAnswer];
   for (const section of answer.sections) {
     lines.push("", section.title);
     section.paragraphs?.forEach((p) => lines.push(p));
     section.bullets?.forEach((b) => lines.push(`- ${b}`));
     section.alternatives?.forEach((a) => lines.push(`- ${a.title} (${a.disposition}): ${a.rationale}`));
-    section.people?.forEach((p) => lines.push(`- ${nameOf(p.employeeId)}: ${p.role}`));
-    section.actions?.forEach((a) => lines.push(`- ${a.description} (${nameOf(a.ownerId)}${a.dueDate ? `, due ${a.dueDate}` : ""})`));
+    section.people?.forEach((p) => lines.push(`- ${personName(p.employeeId)}: ${p.role}`));
+    section.actions?.forEach((a) => lines.push(`- ${a.description} (${personName(a.ownerId)}${a.dueDate ? `, due ${a.dueDate}` : ""})`));
     section.evidence?.forEach((e) => lines.push(`- [${e.artifactId}] ${e.claim}`));
   }
   return lines.join("\n");
 }
 
-const nameOf = (id: string): string => employeeById(id)?.name ?? id;
+function seedPersonName(id: string): string {
+  return employeeById(id)?.name ?? id;
+}

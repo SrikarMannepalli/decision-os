@@ -1,4 +1,4 @@
-import { Search, Users } from "lucide-react";
+import { CircleAlert, Loader, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CitationChip } from "@/components/CitationChip";
 import { EmptyState } from "@/components/EmptyState";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { decisions } from "@/data/decisions";
 import { documents } from "@/data/documents";
-import { employees } from "@/data/employees";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { cn } from "@/lib/utils";
 import type { Decision, Employee } from "@/types";
@@ -22,10 +22,9 @@ function rolesIn(d: Decision, id: string): string[] {
   return roles;
 }
 
-const departments = [...new Set(employees.map((e) => e.department))].sort();
-
 export function PeopleDirectory({ highlightId }: { highlightId?: string }) {
   const { navigate } = useUI();
+  const { people, status, error } = useCatalog();
   const [query, setQuery] = useState("");
   const [department, setDepartment] = useState("");
   const refs = useRef<Record<string, HTMLElement | null>>({});
@@ -36,12 +35,28 @@ export function PeopleDirectory({ highlightId }: { highlightId?: string }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return employees.filter(
+    return people.filter(
       (e: Employee) =>
         (!department || e.department === department) &&
         (!q || [e.name, e.role, e.department].some((v) => v.toLowerCase().includes(q))),
     );
-  }, [query, department]);
+  }, [people, query, department]);
+  const departments = useMemo(() => [...new Set(people.map((e) => e.department))].sort(), [people]);
+
+  if (status === "loading") {
+    return (
+      <div className="mx-auto w-full max-w-4xl p-6" role="status">
+        <EmptyState icon={Loader} title="Loading people" description="Reading the directory from the corpus." />
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <div className="mx-auto w-full max-w-4xl p-6" role="alert">
+        <EmptyState icon={CircleAlert} title="Couldn't load people" description={error ?? "Check that the API is running."} />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">

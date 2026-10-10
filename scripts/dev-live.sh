@@ -6,7 +6,7 @@
 #   scripts/dev-live.sh            # API on :8000, UI on :5173, Ctrl-C stops both
 #   scripts/dev-live.sh --smoke    # ask one question through the API, print it, exit
 #
-# Optional: DECISIONOS_CORPUS (default tests/corpus), API_PORT, UI_PORT,
+# Optional: DECISIONOS_CORPUS (default corpus/finflow), API_PORT, UI_PORT,
 # SMOKE_QUESTION, DECISIONOS_AGENT_MODEL.
 [ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 set -euo pipefail
@@ -16,8 +16,8 @@ cd "$root"
 
 api_port="${API_PORT:-8000}"
 ui_port="${UI_PORT:-5173}"
-corpus="${DECISIONOS_CORPUS:-$root/tests/corpus}"
-smoke_question="${SMOKE_QUESTION:-Why was invoice automation deprioritized?}"
+corpus="${DECISIONOS_CORPUS:-$root/corpus/finflow}"
+smoke_question="${SMOKE_QUESTION:-Who is the Security Engineer at FinFlow?}"
 pi_dir="$HOME/.pi/agent"
 smoke=0
 [[ "${1:-}" == "--smoke" ]] && smoke=1

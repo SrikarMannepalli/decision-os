@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { documents } from "@/data/documents";
-import { employeeById } from "@/data/employees";
 import { projectById, projects } from "@/data/projects";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
 import type { Document } from "@/types";
@@ -23,22 +23,23 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { query: "", projectId: "", type: "", from: "", to: "" };
 
-function authorNames(doc: Document): string {
-  return doc.authorIds.map((id) => employeeById(id)?.name ?? id).join(", ");
+function authorNames(doc: Document, personName: (id: string) => string): string {
+  return doc.authorIds.map(personName).join(", ");
 }
 
-function matches(doc: Document, f: Filters): boolean {
+function matches(doc: Document, f: Filters, personName: (id: string) => string): boolean {
   if (f.projectId && doc.projectId !== f.projectId) return false;
   if (f.type && doc.type !== f.type) return false;
   if (f.from && doc.createdAt < f.from) return false;
   if (f.to && doc.createdAt > f.to) return false;
   const q = f.query.trim().toLowerCase();
   if (!q) return true;
-  const haystack = [doc.title, doc.id, doc.type, doc.summary, doc.content, authorNames(doc)].join("\n").toLowerCase();
+  const haystack = [doc.title, doc.id, doc.type, doc.summary, doc.content, authorNames(doc, personName)].join("\n").toLowerCase();
   return q.split(/\s+/).every((term) => haystack.includes(term));
 }
 
 function AuthorStack({ doc }: { doc: Document }) {
+  const { personById } = useCatalog();
   const shown = doc.authorIds.slice(0, 4);
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -48,7 +49,7 @@ function AuthorStack({ doc }: { doc: Document }) {
         ))}
       </span>
       <span className="truncate text-xs text-muted">
-        {employeeById(doc.authorIds[0])?.name}
+        {personById(doc.authorIds[0])?.name}
         {doc.authorIds.length > 1 ? ` +${doc.authorIds.length - 1}` : ""}
       </span>
     </div>
@@ -78,12 +79,13 @@ function DecisionLinks({ doc }: { doc: Document }) {
 
 export function DocumentLibrary() {
   const { navigate } = useUI();
+  const { personName } = useCatalog();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const set = (patch: Partial<Filters>) => setFilters((prev) => ({ ...prev, ...patch }));
 
   const results = useMemo(
-    () => documents.filter((d) => matches(d, filters)).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)),
-    [filters],
+    () => documents.filter((d) => matches(d, filters, personName)).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)),
+    [filters, personName],
   );
   const filtered = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
   const open = (id: string) => navigate({ view: "documents", id });

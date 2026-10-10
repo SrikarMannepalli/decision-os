@@ -21,3 +21,11 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
 export function formatLines([start, end]: [number, number]): string {
   return start === end ? `line ${start}` : `lines ${start}–${end}`;
 }
+
+export const initials = (name: string): string =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();

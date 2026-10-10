@@ -1,14 +1,16 @@
 import { Fragment } from "react";
 import { CitationChip } from "@/components/CitationChip";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { tokenizeRichText } from "@/lib/richText";
 
 /** Renders text with clickable [ARTIFACT-ID] citations and DEC-### links. */
 export function RichText({ text }: { text: string }) {
   const { navigate } = useUI();
+  const { richTextLookups } = useCatalog();
   return (
     <>
-      {tokenizeRichText(text).map((token, i) => {
+      {tokenizeRichText(text, richTextLookups).map((token, i) => {
         if (token.kind === "cite") return <CitationChip key={i} artifactId={token.id} />;
         if (token.kind === "decision") {
           return (
