@@ -15,6 +15,7 @@ from . import frontmatter
 log = logging.getLogger(__name__)
 
 PERSON_FIELDS = ("name", "role", "department", "email")
+PROJECT_FIELDS = ("name", "ownerId")
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,22 @@ class Person:
             "role": self.role,
             "department": self.department,
             "email": self.email,
+        }
+
+
+@dataclass(frozen=True)
+class Project:
+    id: str
+    name: str
+    description: str
+    ownerId: str
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "ownerId": self.ownerId,
         }
 
 
@@ -66,3 +83,35 @@ class Catalog:
             log.warning("skipping malformed person file %s: %s", path.name, exc)
             return None
         return Person(id=path.stem, **{field: meta[field] for field in PERSON_FIELDS})
+
+    def projects(self) -> list[Project]:
+        projects = (self._load_project(path) for path in sorted((self._corpus / "projects").glob("*.md")))
+        return [project for project in projects if project is not None]
+
+    def project(self, project_id: str) -> Project | None:
+        path = self._corpus / "projects" / f"{project_id}.md"
+        if path.parent != self._corpus / "projects" or not path.is_file():
+            return None
+        return self._load_project(path)
+
+    def _load_project(self, path: Path) -> Project | None:
+        if not path.is_file():
+            return None
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            parsed = frontmatter.split(text)
+            if parsed is None:
+                raise frontmatter.FrontmatterError("no frontmatter")
+            meta = parsed.meta
+            if meta.get("id") != path.stem:
+                raise frontmatter.FrontmatterError(f"id {meta.get('id')!r} does not match the file name")
+            for field in PROJECT_FIELDS:
+                if not isinstance(meta.get(field), str) or not meta[field].strip():
+                    raise frontmatter.FrontmatterError(f"{field} must be a non-empty string")
+            description = "\n".join(text.split("\n")[parsed.body_start_line - 1 :]).strip()
+            if not description:
+                raise frontmatter.FrontmatterError("description (the body) must be a non-empty string")
+        except frontmatter.FrontmatterError as exc:
+            log.warning("skipping malformed project file %s: %s", path.name, exc)
+            return None
+        return Project(id=path.stem, description=description, **{field: meta[field] for field in PROJECT_FIELDS})

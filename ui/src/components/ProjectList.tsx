@@ -1,21 +1,39 @@
+import { CircleAlert, Loader } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { CitationChip } from "@/components/CitationChip";
 import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
+import { EmptyState } from "@/components/EmptyState";
 import { PersonLink } from "@/components/RecordMeta";
 import { decisions } from "@/data/decisions";
 import { documents } from "@/data/documents";
-import { projects } from "@/data/projects";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { cn } from "@/lib/utils";
 
 export function ProjectList({ highlightId }: { highlightId?: string }) {
   const { navigate } = useUI();
+  const { projects, status, error } = useCatalog();
   const refs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     if (highlightId) refs.current[highlightId]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightId]);
+
+  if (status === "loading") {
+    return (
+      <div className="mx-auto w-full max-w-4xl p-6" role="status">
+        <EmptyState icon={Loader} title="Loading projects" description="Reading the projects from the corpus." />
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <div className="mx-auto w-full max-w-4xl p-6" role="alert">
+        <EmptyState icon={CircleAlert} title="Couldn't load projects" description={error ?? "Check that the API is running."} />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">

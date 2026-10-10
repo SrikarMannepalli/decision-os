@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from decisionos import frontmatter
-from decisionos.catalog import Catalog, PERSON_FIELDS
+from decisionos.catalog import Catalog, PERSON_FIELDS, PROJECT_FIELDS
 
 DEMO = Path(__file__).parent.parent / "corpus" / "finflow"
 
@@ -47,6 +47,41 @@ def check_people(root: Path) -> list[str]:
     return problems
 
 
+def project_files(root: Path) -> list[Path]:
+    return sorted((root / "projects").glob("*.md"))
+
+
+def check_projects(root: Path) -> list[str]:
+    """Return every problem found in the projects directory."""
+    problems: list[str] = []
+    seen: dict[str, Path] = {}
+    for path in project_files(root):
+        text = path.read_text(encoding="utf-8")
+        try:
+            parsed = frontmatter.split(text)
+        except frontmatter.FrontmatterError as exc:
+            problems.append(f"{path.name}: {exc}")
+            continue
+        if parsed is None:
+            problems.append(f"{path.name}: no frontmatter")
+            continue
+        meta = parsed.meta
+        for field in PROJECT_FIELDS:
+            if not isinstance(meta.get(field), str) or not meta[field].strip():
+                problems.append(f"{path.name}: {field} must be a non-empty string")
+        description = "\n".join(text.split("\n")[parsed.body_start_line - 1 :]).strip()
+        if not description:
+            problems.append(f"{path.name}: description (the body) must be a non-empty string")
+        project_id = meta.get("id")
+        if project_id != path.stem:
+            problems.append(f"{path.name}: id {project_id!r} does not match the file name")
+        if isinstance(project_id, str):
+            if project_id in seen:
+                problems.append(f"{path.name}: duplicate id {project_id!r} (also {seen[project_id].name})")
+            seen[project_id] = path
+    return problems
+
+
 def test_demo_corpus_has_ten_people():
     assert len(person_files(DEMO)) == 10
 
@@ -58,6 +93,19 @@ def test_demo_people_are_well_formed_with_unique_ids():
 def test_the_catalog_serves_every_demo_person():
     people = Catalog(DEMO).people()
     assert sorted(p.id for p in people) == sorted(f.stem for f in person_files(DEMO))
+
+
+def test_demo_corpus_has_three_projects():
+    assert len(project_files(DEMO)) == 3
+
+
+def test_demo_projects_are_well_formed_with_unique_ids():
+    assert check_projects(DEMO) == []
+
+
+def test_the_catalog_serves_every_demo_project():
+    projects = Catalog(DEMO).projects()
+    assert sorted(p.id for p in projects) == sorted(f.stem for f in project_files(DEMO))
 
 
 def write(root: Path, name: str, text: str) -> None:
