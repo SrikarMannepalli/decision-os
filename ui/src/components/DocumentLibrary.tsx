@@ -1,4 +1,4 @@
-import { FileSearch, Search } from "lucide-react";
+import { FileSearch, Loader, Search, CircleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DOCUMENT_TYPES, DocumentTypeIcon } from "@/components/DocumentTypeIcon";
 import { EmptyState } from "@/components/EmptyState";
@@ -6,7 +6,6 @@ import { PersonAvatar } from "@/components/PersonAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { documents } from "@/data/documents";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
@@ -33,7 +32,7 @@ function matches(doc: Document, f: Filters, personName: (id: string) => string):
   if (f.to && doc.createdAt > f.to) return false;
   const q = f.query.trim().toLowerCase();
   if (!q) return true;
-  const haystack = [doc.title, doc.id, doc.type, doc.summary, doc.content, authorNames(doc, personName)].join("\n").toLowerCase();
+  const haystack = [doc.title, doc.id, doc.type, doc.summary, doc.content ?? "", authorNames(doc, personName)].join("\n").toLowerCase();
   return q.split(/\s+/).every((term) => haystack.includes(term));
 }
 
@@ -78,13 +77,13 @@ function DecisionLinks({ doc }: { doc: Document }) {
 
 export function DocumentLibrary() {
   const { navigate } = useUI();
-  const { personName, projectName, projects } = useCatalog();
+  const { personName, projectName, projects, documents, status, error } = useCatalog();
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const set = (patch: Partial<Filters>) => setFilters((prev) => ({ ...prev, ...patch }));
 
   const results = useMemo(
     () => documents.filter((d) => matches(d, filters, personName)).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)),
-    [filters, personName],
+    [documents, filters, personName],
   );
   const filtered = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
   const open = (id: string) => navigate({ view: "documents", id });
@@ -139,12 +138,21 @@ export function DocumentLibrary() {
         </div>
       </div>
 
+      {status === "loading" ? (
+        <div className="p-6" role="status">
+          <EmptyState icon={Loader} title="Loading documents" description="Reading the documents from the corpus." />
+        </div>
+      ) : status === "error" ? (
+        <div className="p-6" role="alert">
+          <EmptyState icon={CircleAlert} title="Couldn't load documents" description={error ?? "Check that the API is running."} />
+        </div>
+      ) : (
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
         {results.length === 0 ? (
           <EmptyState
             icon={FileSearch}
             title="No documents match these filters"
-            description="Try a different search term, widen the date range, or clear the filters to see all seeded documents."
+            description="Try a different search term, widen the date range, or clear the filters to see all documents."
             action={
               <Button variant="outline" size="sm" onClick={() => setFilters(EMPTY_FILTERS)}>
                 Clear filters
@@ -234,6 +242,7 @@ export function DocumentLibrary() {
           </>
         )}
       </div>
+      )}
     </div>
   );
 }

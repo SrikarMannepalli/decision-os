@@ -5,9 +5,9 @@ import { PersonLink, ProjectLink } from "@/components/RecordMeta";
 import { decisionById } from "@/data/decisions";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
-import type { Document } from "@/types";
+import type { DocumentDetail } from "@/types";
 
-export function DocumentDetail({ document }: { document: Document }) {
+export function DocumentDetail({ document }: { document: DocumentDetail }) {
   const { navigate } = useUI();
   const decisions = document.decisionIds.flatMap((id) => {
     const d = decisionById(id);
@@ -66,7 +66,7 @@ export function DocumentDetail({ document }: { document: Document }) {
           </ul>
         </section>
 
-        {document.excerpts.length > 0 ? (
+        {document.excerpts && document.excerpts.length > 0 ? (
           <section aria-labelledby="doc-key-excerpts">
             <h3 id="doc-key-excerpts" className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
               Key excerpts

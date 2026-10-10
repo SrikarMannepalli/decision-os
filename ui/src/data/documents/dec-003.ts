@@ -1,6 +1,6 @@
-import type { Document } from "@/types";
+import type { SeedDocument } from "@/types";
 
-export const dec003Documents: Document[] = [
+export const dec003Documents: SeedDocument[] = [
   {
     id: "ZOOM-003",
     title: "Forecast explanation discovery review",

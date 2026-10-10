@@ -83,6 +83,17 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="unknown project")
         return project.to_dict()
 
+    @app.get("/documents")
+    def list_documents() -> list[dict]:
+        return [doc.to_list_dict() for doc in catalog.documents()]
+
+    @app.get("/documents/{document_id}")
+    def get_document(document_id: str) -> dict:
+        doc = catalog.document(document_id)
+        if doc is None:
+            raise HTTPException(status_code=404, detail="unknown document")
+        return doc.to_detail_dict()
+
     @app.get("/files/{path:path}")
     def get_file(path: str, start: int = 1, end: int | None = None) -> dict:
         try:

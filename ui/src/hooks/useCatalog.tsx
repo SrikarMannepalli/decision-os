@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { decisionById } from "@/data/decisions";
 import { knownArtifactIds } from "@/data/documents";
 import type { RichTextLookups } from "@/lib/richText";
 import { createLiveCatalogSource, seedCatalogSource, type CatalogSource } from "@/services/catalogApi";
 import { isLiveMode } from "@/services/decisionOSService";
-import type { Employee, Project } from "@/types";
+import type { Document, DocumentDetail, Employee, Project } from "@/types";
 
 export type CatalogStatus = "loading" | "ready" | "error";
 
@@ -20,12 +20,19 @@ export interface ProjectsLookup {
   projectName: (id: string) => string;
 }
 
-export interface Catalog extends PeopleLookup, ProjectsLookup {
+export interface DocumentsLookup {
+  documentById: (id: string) => Document | undefined;
+}
+
+export interface Catalog extends PeopleLookup, ProjectsLookup, DocumentsLookup {
   people: Employee[];
   projects: Project[];
+  documents: Document[];
   status: CatalogStatus;
   error: string | null;
-  /** Documents and decisions still come from the seed until their endpoints land. */
+  /** Fetch one document's detail (content, bodyStartLine); undefined when unknown. */
+  loadDocument: (id: string, signal?: AbortSignal) => Promise<DocumentDetail | undefined>;
+  /** Decisions still come from the seed until their endpoint lands. */
   richTextLookups: RichTextLookups;
 }
 
@@ -45,10 +52,21 @@ export function buildProjectsLookup(projects: Project[]): ProjectsLookup {
   };
 }
 
-const richTextLookups: RichTextLookups = {
-  isArtifact: (id) => knownArtifactIds.has(id),
-  isDecision: (id) => decisionById(id) !== undefined,
-};
+export function buildDocumentsLookup(documents: Document[]): DocumentsLookup {
+  const byId = new Map(documents.map((doc) => [doc.id, doc]));
+  return {
+    documentById: (id) => byId.get(id),
+  };
+}
+
+/** Which ids a rich-text citation may link to. Unknown documents still resolve through the seed ids. */
+export function buildRichTextLookups(documents: Document[]): RichTextLookups {
+  const ids = new Set([...knownArtifactIds, ...documents.map((doc) => doc.id)]);
+  return {
+    isArtifact: (id) => ids.has(id),
+    isDecision: (id) => decisionById(id) !== undefined,
+  };
+}
 
 const defaultSource: CatalogSource = isLiveMode ? createLiveCatalogSource() : seedCatalogSource;
 
@@ -57,17 +75,20 @@ const CatalogContext = createContext<Catalog | null>(null);
 export function CatalogProvider({ children, source = defaultSource }: { children: ReactNode; source?: CatalogSource }) {
   const [people, setPeople] = useState<Employee[]>(source.initialPeople ?? []);
   const [projects, setProjects] = useState<Project[]>(source.initialProjects ?? []);
-  const [status, setStatus] = useState<CatalogStatus>(source.initialPeople && source.initialProjects ? "ready" : "loading");
+  const [documents, setDocuments] = useState<Document[]>(source.initialDocuments ?? []);
+  const preloaded = Boolean(source.initialPeople && source.initialProjects && source.initialDocuments);
+  const [status, setStatus] = useState<CatalogStatus>(preloaded ? "ready" : "loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (source.initialPeople && source.initialProjects) return;
+    if (preloaded) return;
     const controller = new AbortController();
     setStatus("loading");
-    Promise.all([source.loadPeople(controller.signal), source.loadProjects(controller.signal)])
-      .then(([loadedPeople, loadedProjects]) => {
+    Promise.all([source.loadPeople(controller.signal), source.loadProjects(controller.signal), source.loadDocuments(controller.signal)])
+      .then(([loadedPeople, loadedProjects, loadedDocuments]) => {
         setPeople(loadedPeople);
         setProjects(loadedProjects);
+        setDocuments(loadedDocuments);
         setError(null);
         setStatus("ready");
       })
@@ -77,19 +98,24 @@ export function CatalogProvider({ children, source = defaultSource }: { children
         setStatus("error");
       });
     return () => controller.abort();
-  }, [source]);
+  }, [source, preloaded]);
+
+  const loadDocument = useCallback((id: string, signal?: AbortSignal) => source.loadDocument(id, signal), [source]);
 
   const value = useMemo<Catalog>(
     () => ({
       people,
       projects,
+      documents,
       status,
       error,
-      richTextLookups,
+      loadDocument,
+      richTextLookups: buildRichTextLookups(documents),
       ...buildPeopleLookup(people),
       ...buildProjectsLookup(projects),
+      ...buildDocumentsLookup(documents),
     }),
-    [people, projects, status, error],
+    [people, projects, documents, status, error, loadDocument],
   );
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }

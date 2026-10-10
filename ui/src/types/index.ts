@@ -84,6 +84,7 @@ export interface Excerpt {
   text: string;
 }
 
+/** A catalog document as the list endpoint returns it; `content` and `excerpts` are only on the detail/seed. */
 export interface Document {
   id: string;
   title: string;
@@ -95,7 +96,20 @@ export interface Document {
   createdAt: string;
   decisionIds: string[];
   summary: string;
-  /** Lightweight markdown: "## heading", "- bullet", "> quote", blank-line separated paragraphs */
+  content?: string;
+  /** Seed-only; a cited line range replaces them in live mode. */
+  excerpts?: Excerpt[];
+}
+
+/** GET /documents/{id}: adds the body and where it starts in the corpus file. */
+export interface DocumentDetail extends Document {
+  content: string;
+  /** 1-based line of the raw corpus file where `content` begins; absent on seed data. */
+  bodyStartLine?: number;
+}
+
+/** The seed always ships content and excerpts; the API omits them until TASK-009. */
+export interface SeedDocument extends Document {
   content: string;
   excerpts: Excerpt[];
 }
