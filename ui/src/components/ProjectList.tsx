@@ -5,15 +5,13 @@ import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
 import { EmptyState } from "@/components/EmptyState";
 import { PersonLink } from "@/components/RecordMeta";
-import { decisions } from "@/data/decisions";
-import { documents } from "@/data/documents";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { cn } from "@/lib/utils";
 
 export function ProjectList({ highlightId }: { highlightId?: string }) {
   const { navigate } = useUI();
-  const { projects, status, error } = useCatalog();
+  const { projects, decisions, documents, status, error } = useCatalog();
   const refs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {

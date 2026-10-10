@@ -5,8 +5,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { PersonAvatar } from "@/components/PersonAvatar";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { decisions } from "@/data/decisions";
-import { documents } from "@/data/documents";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { cn } from "@/lib/utils";
@@ -24,7 +22,7 @@ function rolesIn(d: Decision, id: string): string[] {
 
 export function PeopleDirectory({ highlightId }: { highlightId?: string }) {
   const { navigate } = useUI();
-  const { people, status, error } = useCatalog();
+  const { people, decisions, documents, status, error } = useCatalog();
   const [query, setQuery] = useState("");
   const [department, setDepartment] = useState("");
   const refs = useRef<Record<string, HTMLElement | null>>({});

@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { decisions as seedDecisions } from "@/data/decisions";
-import { employees } from "@/data/employees";
-import { projects } from "@/data/projects";
-import { documents } from "@/data/documents";
 import { initials } from "@/lib/format";
 import { tokenizeRichText, type RichTextLookups } from "@/lib/richText";
 import { createApiClient, BackendError } from "@/services/apiClient";
-import { createLiveCatalogSource, fetchDocumentDetail, fetchPeople, fetchProjects, fetchDocuments, fetchDecisions, seedCatalogSource } from "@/services/catalogApi";
+import { createLiveCatalogSource, fetchDocumentDetail, fetchPeople, fetchProjects, fetchDocuments, fetchDecisions } from "@/services/catalogApi";
 import { entityForPath } from "@/services/corpusFiles";
 import { relatedEntitiesFromCitations } from "@/lib/relatedEntities";
-import { answerToPlainText } from "@/services/decisionOSService";
 import { buildDecisionsLookup, buildDocumentsLookup, buildPeopleLookup, buildProjectsLookup, buildRichTextLookups } from "@/hooks/useCatalog";
-import type { AssistantAnswer, Decision, Document, DocumentDetail, Employee, Project } from "@/types";
+import type { Decision, Document, DocumentDetail, Employee, Project } from "@/types";
 
 const ada: Employee = { id: "ada-lovelace", name: "Ada Lovelace", role: "Staff Engineer", department: "Engineering", email: "ada@example.test" };
 const prj: Project = { id: "PRJ-101", name: "Invoice Reconciliation", description: "Make reconciliation fast.", ownerId: "ada-lovelace" };
@@ -65,10 +60,6 @@ describe("people from the API", () => {
     expect(await source.loadPeople()).toEqual([ada]);
   });
 
-  it("the seed source is ready immediately and needs no backend", async () => {
-    expect(seedCatalogSource.initialPeople).toEqual(employees);
-    expect(await seedCatalogSource.loadPeople()).toEqual(employees);
-  });
 });
 
 describe("projects from the API", () => {
@@ -105,10 +96,6 @@ describe("projects from the API", () => {
     expect(await source.loadProjects()).toEqual([prj]);
   });
 
-  it("the seed source is ready immediately and needs no backend", async () => {
-    expect(seedCatalogSource.initialProjects).toEqual(projects);
-    expect(await seedCatalogSource.loadProjects()).toEqual(projects);
-  });
 });
 
 describe("projects lookup", () => {
@@ -153,10 +140,6 @@ describe("documents from the API", () => {
     expect(await source.loadDocuments()).toEqual([doc]);
   });
 
-  it("the seed source is ready immediately and needs no backend", async () => {
-    expect(seedCatalogSource.initialDocuments).toEqual(documents);
-    expect(await seedCatalogSource.loadDocuments()).toEqual(documents);
-  });
 });
 
 describe("document detail from the API", () => {
@@ -226,31 +209,6 @@ describe("rich text takes its lookups as parameters", () => {
   });
 });
 
-describe("answerToPlainText takes a person-name lookup", () => {
-  const answer: AssistantAnswer = {
-    confidence: "grounded",
-    directAnswer: "Because.",
-    sections: [
-      {
-        kind: "people",
-        title: "Who was involved",
-        people: [{ employeeId: "ada-lovelace", role: "Owner" }],
-        actions: [{ description: "Write it up", ownerId: "ada-lovelace", dueDate: "2026-10-14" }],
-      },
-    ],
-    decisionIds: [],
-    evidence: [],
-    personIds: [],
-    suggestions: [],
-  };
-
-  it("uses the names it is given", () => {
-    const text = answerToPlainText(answer, (id) => (id === "ada-lovelace" ? "Ada Lovelace" : id));
-    expect(text).toContain("- Ada Lovelace: Owner");
-    expect(text).toContain("- Write it up (Ada Lovelace, due 2026-10-14)");
-  });
-});
-
 describe("decisions from the API", () => {
   const dec: Decision = {
     id: "DEC-001",
@@ -302,10 +260,6 @@ describe("decisions from the API", () => {
     expect(await source.loadDecisions()).toEqual([dec]);
   });
 
-  it("the seed source is ready immediately with the seeded decisions", async () => {
-    expect(seedCatalogSource.initialDecisions).toEqual(seedDecisions);
-    expect(await seedCatalogSource.loadDecisions()).toEqual(seedDecisions);
-  });
 });
 
 describe("decisions lookup and rich text", () => {

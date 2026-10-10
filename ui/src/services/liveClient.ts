@@ -1,6 +1,6 @@
 import { formatLines } from "@/lib/format";
 import type { AssistantAnswer, CorpusCitation } from "@/types";
-import { createApiClient, failure, type ApiClientOptions } from "./apiClient";
+import { BackendError, createApiClient, failure, type ApiClientOptions } from "./apiClient";
 import { fetchFileSlice } from "./corpusFiles";
 import type { DecisionOSClient, QueryResult } from "./decisionOSService";
 
@@ -26,21 +26,27 @@ export function turnToAnswer(turn: BackendTurn): AssistantAnswer {
     // An answer that cites nothing cannot be checked, so it is not shown as grounded.
     confidence: sources.length > 0 ? "grounded" : "insufficient",
     directAnswer: turn.answer.trim(),
-    sections: [],
-    decisionIds: [],
-    evidence: [],
-    personIds: [],
-    suggestions: [],
     sources,
   };
 }
 
 function toPlainText(answer: AssistantAnswer): string {
   const lines = [answer.directAnswer];
-  if (answer.sources?.length) {
+  if (answer.sources.length) {
     lines.push("", "Sources:", ...answer.sources.map((s) => `- ${s.path} (${formatLines(s.lines)})`));
   }
   return lines.join("\n");
+}
+
+/** An error the backend explained itself (for example "set ROUTERPLUS_API_KEY"), else the generic one. */
+async function explained(res: Response, action: string): Promise<BackendError> {
+  try {
+    const body = (await res.json()) as { detail?: unknown };
+    if (typeof body.detail === "string" && body.detail.trim()) return new BackendError(body.detail);
+  } catch {
+    // not JSON (for example a bare proxy error); fall through
+  }
+  return failure(res.status, action);
 }
 
 export function createLiveClient(options: LiveClientOptions = {}): DecisionOSClient {
@@ -69,7 +75,7 @@ export function createLiveClient(options: LiveClientOptions = {}): DecisionOSCli
         backendIds.delete(conversationId);
         res = await sendMessage(conversationId, question);
       }
-      if (!res.ok) throw failure(res.status, "answer that question");
+      if (!res.ok) throw await explained(res, "answer that question");
       const answer = turnToAnswer((await res.json()) as BackendTurn);
       return { answer, text: toPlainText(answer) };
     },

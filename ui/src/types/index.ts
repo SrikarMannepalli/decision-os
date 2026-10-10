@@ -84,7 +84,7 @@ export interface Excerpt {
   text: string;
 }
 
-/** A catalog document as the list endpoint returns it; `content` and `excerpts` are only on the detail/seed. */
+/** A catalog document as the list endpoint returns it; `content` is only on the detail. */
 export interface Document {
   id: string;
   title: string;
@@ -97,57 +97,13 @@ export interface Document {
   decisionIds: string[];
   summary: string;
   content?: string;
-  /** Seed-only; a cited line range replaces them in live mode. */
-  excerpts?: Excerpt[];
 }
 
 /** GET /documents/{id}: adds the body and where it starts in the corpus file. */
 export interface DocumentDetail extends Document {
   content: string;
-  /** 1-based line of the raw corpus file where `content` begins; absent on seed data. */
+  /** 1-based line of the raw corpus file where `content` begins. */
   bodyStartLine?: number;
-}
-
-/** The seed always ships content and excerpts; the API omits them until TASK-009. */
-export interface SeedDocument extends Document {
-  content: string;
-  excerpts: Excerpt[];
-}
-
-/** A pointer from an answer to a specific passage of a seeded document. */
-export interface EvidenceReference {
-  artifactId: string;
-  excerptId: string;
-  /** What this evidence supports */
-  claim: string;
-}
-
-export type SectionKind =
-  | "why"
-  | "decided"
-  | "alternatives"
-  | "evidence"
-  | "people"
-  | "open"
-  | "disagreement"
-  | "decisions";
-
-export interface AnswerAlternative {
-  title: string;
-  disposition: AlternativeDisposition;
-  rationale: string;
-}
-
-export interface AnswerSection {
-  kind: SectionKind;
-  title: string;
-  /** Paragraphs may contain inline citation markers such as [ZOOM-001] */
-  paragraphs?: string[];
-  bullets?: string[];
-  alternatives?: AnswerAlternative[];
-  people?: { employeeId: string; role: string }[];
-  evidence?: EvidenceReference[];
-  actions?: { description: string; ownerId: string; dueDate?: string }[];
 }
 
 export type AnswerConfidence = "grounded" | "unresolved" | "insufficient";
@@ -162,14 +118,8 @@ export interface CorpusCitation {
 export interface AssistantAnswer {
   confidence: AnswerConfidence;
   directAnswer: string;
-  sections: AnswerSection[];
-  decisionIds: string[];
-  evidence: EvidenceReference[];
-  personIds: string[];
-  /** Suggested follow-up questions */
-  suggestions: string[];
-  /** Corpus passages cited by the live backend (absent for mock answers) */
-  sources?: CorpusCitation[];
+  /** Corpus passages cited by the backend */
+  sources: CorpusCitation[];
 }
 
 export interface ChatMessage {

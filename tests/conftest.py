@@ -37,6 +37,8 @@ class FakeAgent:
             answer="I looked and the corpus does not say.",
             citations=(),
         )
+        # Set to an AgentError to make every turn fail (503 path).
+        self.fail_with: Exception | None = None
 
     def on(self, question: str, answer: str, *citations: tuple[str, tuple[int, int]]) -> None:
         self.script[question] = TurnResult(
@@ -46,6 +48,8 @@ class FakeAgent:
 
     def ask(self, conversation_id: str, corpus: str, question: str) -> TurnResult:
         assert corpus == str(self.corpus)
+        if self.fail_with is not None:
+            raise self.fail_with
         self.history.setdefault(conversation_id, []).append(question)
         return self.script.get(question, self.default)
 

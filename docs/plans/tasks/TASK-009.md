@@ -6,10 +6,10 @@ The UI has one data source, the API, and the seeded data and keyword mock engine
 
 ## Acceptance criteria
 
-- [ ] `ui/src/data/*.ts`, `services/mockRetrieval.ts`, the seeded conversations and the mock-only tests are removed.
-- [ ] `npm run dev` runs the UI against the API; pages work without a model key and only chat needs `ROUTERPLUS_API_KEY`.
-- [ ] `ui/README.md`, `SettingsPage` and the README structure section describe the real setup.
-- [ ] `scripts/verify.sh` exits 0 and the UI checks pass.
+- [x] `ui/src/data/*.ts`, `services/mockRetrieval.ts`, the seeded conversations and the mock-only tests are removed.
+- [x] `npm run dev` runs the UI against the API; pages work without a model key and only chat needs `ROUTERPLUS_API_KEY`.
+- [x] `ui/README.md`, `SettingsPage` and the README structure section describe the real setup.
+- [x] `scripts/verify.sh` exits 0 and the UI checks pass.
 
 ## Out of scope
 
@@ -28,6 +28,12 @@ cd ui && npm test && npm run typecheck && npm run build
 
 ## Notes
 
+- Human decision taken: drop offline `npm run dev` — the seed, mock engine and `VITE_DECISIONOS_MODE` are gone; `dev` always proxies `/api`.
+- Also removed with the mock: `AnswerSection`, `SourceDrawer` (excerpt drawer), the mock-only `AssistantAnswer` fields (`sections`, `decisionIds`, `evidence`, `personIds`, `suggestions`) and the `Excerpt`/`SeedDocument` types. `CitationChip` now navigates to the document detail view; chat citations keep opening `CorpusSourceView` (`GET /files/{path}`).
+- Suggested prompt chips moved into `ChatView` as a static list and stay visible.
+- `scripts/dev-live.sh` no longer sets `VITE_DECISIONOS_MODE`.
+- Verified live without a model key: uvicorn over `corpus/finflow` + `npm run dev`; the proxy serves 10 people, 3 projects, 18 documents, 3 decisions; a chat turn without `ROUTERPLUS_API_KEY` answers 503 with a human-readable detail ("Set ROUTERPLUS_API_KEY and restart the API.") that the chat error state shows verbatim.
+- Live end-to-end against the real Pi session still not run (no key in this environment); covered by the sidecar/jsonl suites and `live-client.test.ts`.
 - Design: `docs/design/corpus-catalog-api.md`
 - ADRs: `docs/adr/0004-corpus-entities-are-markdown-with-frontmatter.md`, `docs/adr/0003-retrieval-is-a-conversation-with-citations.md`
 - Needs a human decision before it starts: drop offline `npm run dev` (recommended), or keep the seed and mock for offline use at the cost of two data sources.

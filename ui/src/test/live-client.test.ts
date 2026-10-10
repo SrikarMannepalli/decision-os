@@ -52,8 +52,6 @@ describe("live client", () => {
     const { answer, text } = await createLiveClient({ fetchImpl }).queryDecisionOS("ui-1", "why?", []);
     expect(answer.confidence).toBe("grounded");
     expect(answer.sources).toEqual([{ path: "decisions/2024-04-02-x.md", lines: [4, 9] }]);
-    expect(answer.decisionIds).toEqual([]);
-    expect(answer.evidence).toEqual([]);
     expect(text).toContain("decisions/2024-04-02-x.md (lines 4–9)");
   });
 
@@ -67,6 +65,17 @@ describe("live client", () => {
     const { fetchImpl } = fakeBackend([{ answer: "ok", citations: [] }], { loseSessionOnce: true });
     const { answer } = await createLiveClient({ fetchImpl }).queryDecisionOS("ui-1", "q", []);
     expect(answer.directAnswer).toBe("ok");
+  });
+
+  it("surfaces the backend's own explanation of a failure", async () => {
+    const fetchImpl = (async (url: string) => {
+      if (url.endsWith("/conversations")) return new Response(JSON.stringify({ id: "backend-1" }), { status: 201 });
+      return new Response(
+        JSON.stringify({ detail: "The agent has no model key, so questions cannot be answered. Set ROUTERPLUS_API_KEY and restart the API." }),
+        { status: 503 },
+      );
+    }) as unknown as typeof fetch;
+    await expect(createLiveClient({ fetchImpl }).queryDecisionOS("ui-1", "q", [])).rejects.toThrow(/ROUTERPLUS_API_KEY/);
   });
 
   it("treats a 5xx from the dev proxy as the backend being down", async () => {
