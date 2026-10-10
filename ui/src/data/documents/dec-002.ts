@@ -1,4 +1,4 @@
-import type { Document } from "@/types";
+import type { SeedDocument } from "@/types";
 
 // Excerpt texts are defined once and interpolated into each document's content,
 // so every excerpt is guaranteed to be a verbatim substring of its source.
@@ -53,7 +53,7 @@ const eng = {
     "Exception-list generation for very large selections still needs sizing work, and partial permissions are not yet reflected in how the list is built.",
 };
 
-export const dec002Documents: Document[] = [
+export const dec002Documents: SeedDocument[] = [
   {
     id: "ZOOM-002",
     title: "Bulk invoice action safety review",

@@ -1,4 +1,4 @@
-import { AlertTriangle, RotateCw } from "lucide-react";
+import { AlertTriangle, ExternalLink, RotateCw } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -24,8 +24,10 @@ export function CorpusSourceView() {
 
 function CorpusSourceBody({ citation }: { citation: CorpusCitation }) {
   const { state, retry } = useFileSlice(citation);
+  const { navigate } = useUI();
   const [first, last] = citation.lines;
   const firstCited = useRef<HTMLLIElement | null>(null);
+  const documentId = state.status === "ready" && state.slice.entity?.kind === "document" ? state.slice.entity.id : undefined;
 
   useEffect(() => {
     if (state.status === "ready") firstCited.current?.scrollIntoView?.({ block: "center" });
@@ -87,8 +89,16 @@ function CorpusSourceBody({ citation }: { citation: CorpusCitation }) {
       </div>
 
       {state.status === "ready" ? (
-        <div className="border-t border-border px-5 py-3 text-xs text-muted">
-          Showing lines {state.slice.start}–{state.slice.end} of {state.slice.totalLines}
+        <div className="flex items-center justify-between gap-2 border-t border-border px-5 py-3">
+          <p className="text-xs text-muted">
+            Showing lines {state.slice.start}–{state.slice.end} of {state.slice.totalLines}
+          </p>
+          {documentId ? (
+            <Button size="sm" onClick={() => navigate({ view: "documents", id: documentId })}>
+              <ExternalLink aria-hidden className="h-4 w-4" />
+              Open document {documentId}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </>

@@ -6,12 +6,13 @@ fails on it.
 
 from __future__ import annotations
 
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
 
 from decisionos import frontmatter
-from decisionos.catalog import Catalog, PERSON_FIELDS, PROJECT_FIELDS
+from decisionos.catalog import Catalog, DOCUMENT_FIELDS, PERSON_FIELDS, PROJECT_FIELDS
 
 DEMO = Path(__file__).parent.parent / "corpus" / "finflow"
 
@@ -106,6 +107,62 @@ def test_demo_projects_are_well_formed_with_unique_ids():
 def test_the_catalog_serves_every_demo_project():
     projects = Catalog(DEMO).projects()
     assert sorted(p.id for p in projects) == sorted(f.stem for f in project_files(DEMO))
+
+
+def document_files(root: Path) -> list[Path]:
+    return sorted((root / "documents").glob("*.md"))
+
+
+def check_documents(root: Path) -> list[str]:
+    """Return every problem found in the documents directory."""
+    problems: list[str] = []
+    seen: dict[str, Path] = {}
+    for path in document_files(root):
+        text = path.read_text(encoding="utf-8")
+        try:
+            parsed = frontmatter.split(text)
+        except frontmatter.FrontmatterError as exc:
+            problems.append(f"{path.name}: {exc}")
+            continue
+        if parsed is None:
+            problems.append(f"{path.name}: no frontmatter")
+            continue
+        meta = parsed.meta
+        for field in DOCUMENT_FIELDS:
+            value = meta.get(field)
+            if isinstance(value, datetime):
+                value = value.date()
+            ok = isinstance(value, date) or (isinstance(value, str) and value.strip())
+            if not ok:
+                problems.append(f"{path.name}: {field} must be a non-empty string")
+        for field in ("authors", "decisions"):
+            value = meta.get(field)
+            if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+                problems.append(f"{path.name}: {field} must be a list of ids")
+        content = "\n".join(text.split("\n")[parsed.body_start_line - 1 :]).strip()
+        if not content:
+            problems.append(f"{path.name}: content (the body) must be a non-empty string")
+        document_id = meta.get("id")
+        if document_id != path.stem:
+            problems.append(f"{path.name}: id {document_id!r} does not match the file name")
+        if isinstance(document_id, str):
+            if document_id in seen:
+                problems.append(f"{path.name}: duplicate id {document_id!r} (also {seen[document_id].name})")
+            seen[document_id] = path
+    return problems
+
+
+def test_demo_corpus_has_eighteen_documents():
+    assert len(document_files(DEMO)) == 18
+
+
+def test_demo_documents_are_well_formed_with_unique_ids():
+    assert check_documents(DEMO) == []
+
+
+def test_the_catalog_serves_every_demo_document():
+    documents = Catalog(DEMO).documents()
+    assert sorted(d.id for d in documents) == sorted(f.stem for f in document_files(DEMO))
 
 
 def write(root: Path, name: str, text: str) -> None:

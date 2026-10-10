@@ -1,16 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { employees } from "@/data/employees";
 import { projects } from "@/data/projects";
+import { documents } from "@/data/documents";
 import { initials } from "@/lib/format";
 import { tokenizeRichText, type RichTextLookups } from "@/lib/richText";
 import { createApiClient, BackendError } from "@/services/apiClient";
-import { createLiveCatalogSource, fetchPeople, fetchProjects, seedCatalogSource } from "@/services/catalogApi";
+import { createLiveCatalogSource, fetchDocumentDetail, fetchPeople, fetchProjects, fetchDocuments, seedCatalogSource } from "@/services/catalogApi";
 import { answerToPlainText } from "@/services/decisionOSService";
-import { buildPeopleLookup, buildProjectsLookup } from "@/hooks/useCatalog";
-import type { AssistantAnswer, Employee, Project } from "@/types";
+import { buildDocumentsLookup, buildPeopleLookup, buildProjectsLookup } from "@/hooks/useCatalog";
+import type { AssistantAnswer, Document, DocumentDetail, Employee, Project } from "@/types";
 
 const ada: Employee = { id: "ada-lovelace", name: "Ada Lovelace", role: "Staff Engineer", department: "Engineering", email: "ada@example.test" };
 const prj: Project = { id: "PRJ-101", name: "Invoice Reconciliation", description: "Make reconciliation fast.", ownerId: "ada-lovelace" };
+
+const doc: Document = {
+  id: "ZOOM-001",
+  title: "Reconciliation rollout and peak-load review",
+  type: "Zoom transcript",
+  projectId: "PRJ-101",
+  authorIds: ["maya-chen"],
+  createdAt: "2026-09-30",
+  decisionIds: ["DEC-001"],
+  summary: "Review of load-test results.",
+};
+const docDetail: DocumentDetail = { ...doc, content: "## Attendees\nMaya Chen", bodyStartLine: 14 };
 
 const respond = (status: number, body: unknown) =>
   (async () => new Response(typeof body === "string" ? body : JSON.stringify(body), { status })) as unknown as typeof fetch;
@@ -106,6 +119,74 @@ describe("projects lookup", () => {
   it("names a project, falling back to the id for an unknown one", () => {
     expect(lookup.projectName("PRJ-101")).toBe("Invoice Reconciliation");
     expect(lookup.projectName("PRJ-999")).toBe("PRJ-999");
+  });
+});
+
+describe("documents from the API", () => {
+  it("requests GET /documents and returns the list without content", async () => {
+    const urls: string[] = [];
+    const fetchImpl = (async (url: string) => {
+      urls.push(url);
+      return new Response(JSON.stringify([doc]), { status: 200 });
+    }) as unknown as typeof fetch;
+    const loaded = await fetchDocuments(createApiClient({ baseUrl: "/api", fetchImpl }));
+    expect(urls).toEqual(["/api/documents"]);
+    expect(loaded).toEqual([doc]);
+    expect("content" in loaded[0]).toBe(false);
+  });
+
+  it("reports a 5xx as the backend being down", async () => {
+    await expect(fetchDocuments(createApiClient({ fetchImpl: respond(502, "") }))).rejects.toThrow(/unavailable/);
+  });
+
+  it("rejects a response that is not a list of documents", async () => {
+    await expect(fetchDocuments(createApiClient({ fetchImpl: respond(200, { detail: "nope" }) }))).rejects.toBeInstanceOf(BackendError);
+    await expect(fetchDocuments(createApiClient({ fetchImpl: respond(200, [{ id: "x" }]) }))).rejects.toBeInstanceOf(BackendError);
+  });
+
+  it("the live source loads over the API and has nothing preloaded", async () => {
+    const source = createLiveCatalogSource({ fetchImpl: respond(200, [doc]) });
+    expect(source.initialDocuments).toBeUndefined();
+    expect(await source.loadDocuments()).toEqual([doc]);
+  });
+
+  it("the seed source is ready immediately and needs no backend", async () => {
+    expect(seedCatalogSource.initialDocuments).toEqual(documents);
+    expect(await seedCatalogSource.loadDocuments()).toEqual(documents);
+  });
+});
+
+describe("document detail from the API", () => {
+  it("requests GET /documents/{id} and returns the detail", async () => {
+    const urls: string[] = [];
+    const fetchImpl = (async (url: string) => {
+      urls.push(url);
+      return new Response(JSON.stringify(docDetail), { status: 200 });
+    }) as unknown as typeof fetch;
+    const loaded = await fetchDocumentDetail("ZOOM-001", createApiClient({ baseUrl: "/api", fetchImpl }));
+    expect(urls).toEqual(["/api/documents/ZOOM-001"]);
+    expect(loaded).toEqual(docDetail);
+  });
+
+  it("reports an unknown document as a BackendError", async () => {
+    await expect(fetchDocumentDetail("NOPE-001", createApiClient({ fetchImpl: respond(404, { detail: "unknown document" }) }))).rejects.toBeInstanceOf(
+      BackendError,
+    );
+  });
+
+  it("rejects a response that is not a document detail", async () => {
+    await expect(
+      fetchDocumentDetail("ZOOM-001", createApiClient({ fetchImpl: respond(200, { detail: "nope" }) })),
+    ).rejects.toBeInstanceOf(BackendError);
+  });
+});
+
+describe("documents lookup", () => {
+  const lookup = buildDocumentsLookup([doc]);
+
+  it("finds a document by id", () => {
+    expect(lookup.documentById("ZOOM-001")).toEqual(doc);
+    expect(lookup.documentById("NOPE-001")).toBeUndefined();
   });
 });
 
