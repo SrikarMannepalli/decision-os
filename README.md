@@ -36,3 +36,6 @@ Intent lives in `docs/product/`. Binding choices live in `docs/adr/`. The active
 ```bash
 scripts/verify.sh
 ```
+
+Live backend testing (fresh machine, RouterPlus credentials) is documented in
+`docs/runbooks/testing-the-backend.md`.
