@@ -1,23 +1,34 @@
 # DecisionOS
 
-An agent that answers why a product decision was made, what was assumed, and how that decision changed, by reading a file corpus.
+DecisionOS answers why a product decision was made, what was assumed, and how it changed, by reading a file corpus.
+
+A person asks a question. A read-only agent lists, searches, and reads the files, then answers with the paths and lines it used.
 
 ## V1
 
-Sources live on disk. An extractor writes one markdown decision record per decision. An answer agent reads those records first and opens a source file only to cite the supporting lines.
+The corpus is markdown on disk. Python and FastAPI expose the API. [Pi](https://pi.dev) runs the agent loop. The session may use `read`, `grep`, `find`, and `ls`, with its working directory set to the corpus.
 
 ```text
-sources/meetings/2026-01-12-q1-roadmap.md
-sources/slack/2026-03-02-invoicing-thread.md
-sources/docs/2026-01-customer-research.md
-decisions/2026-01-12-deprioritize-invoice-automation.md
+POST /ask
+    │
+    ▼
+FastAPI
+    │  question + corpus path
+    ▼
+Pi session
+    tools: ls, find, grep, read
+    │
+    ▼
+answer + cited file paths
 ```
 
-Retrieval is list, text search, and read behind one function, `retrieve(question)`. Embeddings and hybrid search can replace that implementation later. The answer shape stays the same.
+`retrieve(question)` is the function FastAPI calls. A later search index can change how the next file is chosen inside that function. The route and the answer shape stay the same.
 
-## Layout
+Writing decision records, a timeline, and embeddings come after this loop can open the right file and quote it.
 
-This repo follows the agent-first template. Intent goes in `docs/product/`, binding choices in `docs/adr/`, and the active task in `docs/plans/`.
+## Repo
+
+Intent lives in `docs/product/`. Binding choices live in `docs/adr/`. The active task lives in `docs/plans/`.
 
 ```bash
 scripts/verify.sh

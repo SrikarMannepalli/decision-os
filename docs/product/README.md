@@ -1,6 +1,10 @@
 # Product intent
 
-Write what the software should do here. One document per feature or problem, linked from the task that implements it.
+| Document | What it covers |
+|---|---|
+| [retrieval.md](retrieval.md) | V1: ask a question, read the corpus, answer with citations |
+
+One document per feature or problem, linked from the task that implements it.
 
 Include:
 

@@ -2,15 +2,17 @@
 
 ## What this repo is
 
-Agent-first repository. Humans write intent and review. Agents implement.
+DecisionOS answers questions about past product decisions by reading a file corpus. Humans write intent and review. Agents implement.
 
-- `src/` — application code
-- `tests/` — tests for that code
+- `src/` — FastAPI application
+- `agent/` — Pi session that implements `retrieve(question)`
 - `docs/product/` — what to build and how to tell it works
 - `docs/design/` — feature designs for the change in progress
 - `docs/adr/` — binding decisions
 - `docs/plans/` — the active task and the task backlog
 - `.agents/skills/` — procedures loaded only when a task matches
+
+The HTTP API is Python and FastAPI. The retrieval loop is a Pi session. Follow [ADR-0002](docs/adr/0002-retrieval-is-a-read-only-pi-session.md).
 
 ## Commands
 
@@ -35,6 +37,8 @@ CI runs that command. A green local run is the completion gate.
 - Do not push to the default branch.
 - Do not rewrite the decision text of an accepted ADR. Supersede it with a new ADR.
 - Changes under `docs/adr/` and `.github/` need a human review.
+- The Pi session tools for retrieval are `read`, `grep`, `find`, and `ls`. Its working directory is the corpus root.
+- `retrieve(question)` is the seam FastAPI calls. Search indexes, when they exist, sit inside that function.
 
 ## How to pick up work
 
