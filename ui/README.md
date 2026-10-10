@@ -36,8 +36,8 @@ cd ui && npm run dev:live                     # proxies /api to http://localhost
 Set `DECISIONOS_API_URL` to use a different API address. In live mode:
 
 - Each UI conversation maps to one backend conversation, created on the first question.
-- The answer is the backend's prose, and its `{path, lines}` citations are listed as sources. An answer with no citations is shown as "not enough evidence".
-- The mock conversations and suggested prompts are hidden. The Decision Log, Documents, Projects and People pages still show the seeded data, because the backend has no endpoints for them.
+- The answer is the backend's prose, and its `{path, lines}` citations are listed as sources. Clicking a source opens the cited lines (highlighted, with three lines of context) from `GET /files/{path}`. An answer with no citations is shown as "not enough evidence".
+- The mock conversations and suggested prompts are hidden. The Decision Log, Documents, Projects and People pages still show the seeded data, because the backend has no endpoints for them yet.
 
 ## Structure
 

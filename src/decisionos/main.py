@@ -1,4 +1,4 @@
-"""FastAPI app: conversation routes over retrieve() (ADR-0003)."""
+"""FastAPI app: conversation routes over retrieve() (ADR-0003) and corpus file content (ADR-0004)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from .corpus import FileNotFound, InvalidPath, InvalidRange, read_slice
 from .retrieval import ConversationStore, UnknownConversation
 from .sidecar import SidecarAgent
 
@@ -24,9 +25,8 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
     own_agent = agent is None
     if agent is None:
         agent = SidecarAgent()
-    store = ConversationStore(
-        agent, corpus or os.environ.get("DECISIONOS_CORPUS", str(DEFAULT_CORPUS))
-    )
+    corpus_root = corpus or os.environ.get("DECISIONOS_CORPUS", str(DEFAULT_CORPUS))
+    store = ConversationStore(agent, corpus_root)
     if own_agent:
 
         @asynccontextmanager
@@ -57,6 +57,15 @@ def create_app(agent=None, corpus: str | None = None) -> FastAPI:
         if conversation is None:
             raise HTTPException(status_code=404, detail="unknown conversation")
         return conversation.to_dict()
+
+    @app.get("/files/{path:path}")
+    def get_file(path: str, start: int = 1, end: int | None = None) -> dict:
+        try:
+            return read_slice(Path(corpus_root), path, start, end).to_dict()
+        except FileNotFound:
+            raise HTTPException(status_code=404, detail="unknown file")
+        except (InvalidPath, InvalidRange) as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
 
     return app
 

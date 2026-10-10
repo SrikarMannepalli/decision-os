@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BackendError, createLiveClient, turnToAnswer } from "@/services/liveClient";
+import { BackendError } from "@/services/apiClient";
+import { createLiveClient, turnToAnswer } from "@/services/liveClient";
 
 type Call = { url: string; body?: unknown };
 

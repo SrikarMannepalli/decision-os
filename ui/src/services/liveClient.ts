@@ -1,5 +1,7 @@
 import { formatLines } from "@/lib/format";
 import type { AssistantAnswer, CorpusCitation } from "@/types";
+import { createApiClient, failure, type ApiClientOptions } from "./apiClient";
+import { fetchFileSlice } from "./corpusFiles";
 import type { DecisionOSClient, QueryResult } from "./decisionOSService";
 
 interface BackendTurn {
@@ -8,13 +10,7 @@ interface BackendTurn {
   citations: { path: string; lines: [number, number] }[];
 }
 
-export class BackendError extends Error {}
-
-export interface LiveClientOptions {
-  /** Where the FastAPI app is reachable; the dev server proxies /api to it. */
-  baseUrl?: string;
-  fetchImpl?: typeof fetch;
-}
+export type LiveClientOptions = ApiClientOptions;
 
 /** Maps a backend turn (prose + path/line citations) onto the UI's answer shape. */
 export function turnToAnswer(turn: BackendTurn): AssistantAnswer {
@@ -47,34 +43,15 @@ function toPlainText(answer: AssistantAnswer): string {
   return lines.join("\n");
 }
 
-// A dev-proxy that cannot reach the API answers 5xx, so 5xx reads as "backend down".
-const failure = (status: number, action: string): BackendError =>
-  new BackendError(
-    status >= 500
-      ? `The DecisionOS backend is unavailable (HTTP ${status}). Check that the API is running.`
-      : `The backend could not ${action} (HTTP ${status}).`,
-  );
-
-export function createLiveClient({ baseUrl = "/api", fetchImpl = (...args) => fetch(...args) }: LiveClientOptions = {}): DecisionOSClient {
+export function createLiveClient(options: LiveClientOptions = {}): DecisionOSClient {
+  const api = createApiClient(options);
   // UI conversation id -> backend conversation id (one Pi session each).
   const backendIds = new Map<string, string>();
-
-  const post = async (path: string, body?: unknown): Promise<Response> => {
-    try {
-      return await fetchImpl(`${baseUrl}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-    } catch {
-      throw new BackendError("Could not reach the DecisionOS backend. Check that the API is running.");
-    }
-  };
 
   const backendConversation = async (uiId: string): Promise<string> => {
     const existing = backendIds.get(uiId);
     if (existing) return existing;
-    const res = await post("/conversations");
+    const res = await api.post("/conversations");
     if (!res.ok) throw failure(res.status, "start a conversation");
     const { id } = (await res.json()) as { id: string };
     backendIds.set(uiId, id);
@@ -82,7 +59,7 @@ export function createLiveClient({ baseUrl = "/api", fetchImpl = (...args) => fe
   };
 
   const sendMessage = async (uiId: string, question: string): Promise<Response> =>
-    post(`/conversations/${await backendConversation(uiId)}/messages`, { question });
+    api.post(`/conversations/${await backendConversation(uiId)}/messages`, { question });
 
   return {
     async queryDecisionOS(conversationId, question): Promise<QueryResult> {
@@ -96,5 +73,6 @@ export function createLiveClient({ baseUrl = "/api", fetchImpl = (...args) => fe
       const answer = turnToAnswer((await res.json()) as BackendTurn);
       return { answer, text: toPlainText(answer) };
     },
+    fetchSource: (citation, signal) => fetchFileSlice(api, citation, signal),
   };
 }

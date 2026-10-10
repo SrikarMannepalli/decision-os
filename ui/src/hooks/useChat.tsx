@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { seededConversations } from "@/data/conversations";
-import { BackendError } from "@/services/liveClient";
+import { BackendError } from "@/services/apiClient";
 import { isLiveMode, queryDecisionOS } from "@/services/decisionOSService";
 import type { ChatMessage, Conversation } from "@/types";
 
