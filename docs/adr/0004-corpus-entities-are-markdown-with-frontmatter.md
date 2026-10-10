@@ -1,6 +1,6 @@
 # ADR-0004: Corpus entities are markdown with YAML frontmatter
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-10
 - Supersedes: none
 - Superseded by: none
