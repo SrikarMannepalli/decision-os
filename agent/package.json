@@ -1,0 +1,14 @@
+{
+	"name": "decisionos-agent",
+	"private": true,
+	"type": "module",
+	"version": "0.1.0",
+	"description": "Pi SDK sidecar: one read-only agent session per conversation",
+	"main": "index.mjs",
+	"scripts": {
+		"check": "node --check index.mjs"
+	},
+	"dependencies": {
+		"@earendil-works/pi-coding-agent": "*"
+	}
+}

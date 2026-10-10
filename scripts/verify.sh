@@ -34,4 +34,22 @@ for adr in "${adr_files[@]}"; do
   fi
 done
 
+echo "verify: python"
+if command -v python3 >/dev/null 2>&1; then
+  python3 -m venv .venv >/dev/null 2>&1 || true
+  .venv/bin/pip install -q -e '.[dev]' >/dev/null 2>&1 || pip install -q -e '.[dev]'
+  .venv/bin/python -m pytest -q || python3 -m pytest -q
+else
+  echo "verify: python3 not found" >&2
+  exit 1
+fi
+
+echo "verify: agent"
+if command -v node >/dev/null 2>&1; then
+  node --check agent/index.mjs
+else
+  echo "verify: node not found" >&2
+  exit 1
+fi
+
 echo "verify: ok"
