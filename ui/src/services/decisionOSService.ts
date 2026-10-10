@@ -1,5 +1,6 @@
 import { employeeById } from "@/data/employees";
-import type { AssistantAnswer, ChatMessage } from "@/types";
+import type { AssistantAnswer, ChatMessage, CorpusCitation } from "@/types";
+import type { FileSlice } from "./corpusFiles";
 import { createLiveClient } from "./liveClient";
 import { answerQuestion } from "./mockRetrieval";
 
@@ -16,6 +17,8 @@ export interface QueryResult {
  */
 export interface DecisionOSClient {
   queryDecisionOS(conversationId: string, question: string, conversationHistory: ChatMessage[]): Promise<QueryResult>;
+  /** The cited lines of a corpus file with context; only the live backend can serve them. */
+  fetchSource?(citation: CorpusCitation, signal?: AbortSignal): Promise<FileSlice>;
 }
 
 /** Set by `npm run dev:live`; the default is the offline mock. */

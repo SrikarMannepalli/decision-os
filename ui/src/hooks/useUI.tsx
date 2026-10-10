@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import type { CorpusCitation } from "@/types";
 import { useHashRoute, type Route } from "./useHashRoute";
 
 export interface SourceTarget {
@@ -21,6 +22,9 @@ interface UIContextValue {
   setMobileContextOpen: (open: boolean) => void;
   source: SourceTarget | null;
   openSource: (target: SourceTarget) => void;
+  /** The cited corpus lines open in the source drawer (live mode) */
+  corpusSource: CorpusCitation | null;
+  openCorpusSource: (citation: CorpusCitation) => void;
   closeSource: () => void;
 }
 
@@ -33,16 +37,27 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileContextOpen, setMobileContextOpen] = useState(false);
   const [source, setSource] = useState<SourceTarget | null>(null);
+  const [corpusSource, setCorpusSource] = useState<CorpusCitation | null>(null);
 
-  const openSource = useCallback((target: SourceTarget) => setSource(target), []);
-  const closeSource = useCallback(() => setSource(null), []);
+  const openSource = useCallback((target: SourceTarget) => {
+    setCorpusSource(null);
+    setSource(target);
+  }, []);
+  const openCorpusSource = useCallback((citation: CorpusCitation) => {
+    setSource(null);
+    setCorpusSource(citation);
+  }, []);
+  const closeSource = useCallback(() => {
+    setSource(null);
+    setCorpusSource(null);
+  }, []);
 
   const value = useMemo<UIContextValue>(
     () => ({
       route,
       navigate: (to) => {
         setMobileNavOpen(false);
-        setSource(null);
+        closeSource();
         navigate(to);
       },
       sidebarCollapsed,
@@ -56,9 +71,11 @@ export function UIProvider({ children }: { children: ReactNode }) {
       setMobileContextOpen,
       source,
       openSource,
+      corpusSource,
+      openCorpusSource,
       closeSource,
     }),
-    [route, navigate, sidebarCollapsed, contextCollapsed, mobileNavOpen, mobileContextOpen, source, openSource, closeSource],
+    [route, navigate, sidebarCollapsed, contextCollapsed, mobileNavOpen, mobileContextOpen, source, openSource, corpusSource, openCorpusSource, closeSource],
   );
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

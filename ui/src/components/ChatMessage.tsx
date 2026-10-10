@@ -166,14 +166,22 @@ function AssistantMessage({
 }
 
 export function CorpusSources({ sources, heading = true }: { sources: CorpusCitation[]; heading?: boolean }) {
+  const { openCorpusSource } = useUI();
   return (
     <section className="mt-3" aria-label="Cited sources">
       {heading ? <h3 className="mb-1.5 text-[13px] font-semibold">Sources</h3> : null}
       <ul className="divide-y divide-border rounded-md border border-border bg-surface text-sm">
         {sources.map((s) => (
-          <li key={`${s.path}:${s.lines.join("-")}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-3 py-2">
-            <code className="break-all font-mono text-xs text-accent-ink">{s.path}</code>
-            <span className="text-xs text-muted">{formatLines(s.lines)}</span>
+          <li key={`${s.path}:${s.lines.join("-")}`}>
+            <button
+              type="button"
+              onClick={() => openCorpusSource(s)}
+              aria-label={`Open ${s.path}, ${formatLines(s.lines)}`}
+              className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-3 py-2 text-left hover:bg-subtle"
+            >
+              <code className="break-all font-mono text-xs text-accent-ink">{s.path}</code>
+              <span className="text-xs text-muted">{formatLines(s.lines)}</span>
+            </button>
           </li>
         ))}
       </ul>
