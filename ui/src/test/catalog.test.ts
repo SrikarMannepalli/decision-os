@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { decisions as seedDecisions } from "@/data/decisions";
 import { employees } from "@/data/employees";
 import { projects } from "@/data/projects";
 import { documents } from "@/data/documents";
 import { initials } from "@/lib/format";
 import { tokenizeRichText, type RichTextLookups } from "@/lib/richText";
 import { createApiClient, BackendError } from "@/services/apiClient";
-import { createLiveCatalogSource, fetchDocumentDetail, fetchPeople, fetchProjects, fetchDocuments, seedCatalogSource } from "@/services/catalogApi";
+import { createLiveCatalogSource, fetchDocumentDetail, fetchPeople, fetchProjects, fetchDocuments, fetchDecisions, seedCatalogSource } from "@/services/catalogApi";
+import { entityForPath } from "@/services/corpusFiles";
+import { relatedEntitiesFromCitations } from "@/lib/relatedEntities";
 import { answerToPlainText } from "@/services/decisionOSService";
-import { buildDocumentsLookup, buildPeopleLookup, buildProjectsLookup } from "@/hooks/useCatalog";
-import type { AssistantAnswer, Document, DocumentDetail, Employee, Project } from "@/types";
+import { buildDecisionsLookup, buildDocumentsLookup, buildPeopleLookup, buildProjectsLookup, buildRichTextLookups } from "@/hooks/useCatalog";
+import type { AssistantAnswer, Decision, Document, DocumentDetail, Employee, Project } from "@/types";
 
 const ada: Employee = { id: "ada-lovelace", name: "Ada Lovelace", role: "Staff Engineer", department: "Engineering", email: "ada@example.test" };
 const prj: Project = { id: "PRJ-101", name: "Invoice Reconciliation", description: "Make reconciliation fast.", ownerId: "ada-lovelace" };
@@ -245,5 +248,139 @@ describe("answerToPlainText takes a person-name lookup", () => {
     const text = answerToPlainText(answer, (id) => (id === "ada-lovelace" ? "Ada Lovelace" : id));
     expect(text).toContain("- Ada Lovelace: Owner");
     expect(text).toContain("- Write it up (Ada Lovelace, due 2026-10-14)");
+  });
+});
+
+describe("decisions from the API", () => {
+  const dec: Decision = {
+    id: "DEC-001",
+    title: "Phase rollout of large-account reconciliation",
+    projectId: "PRJ-101",
+    status: "Approved with follow-up",
+    ownerId: "maya-chen",
+    technicalOwnerId: "priya-nair",
+    contributorIds: ["arjun-mehta"],
+    approverIds: ["maya-chen"],
+    decidedAt: "2026-10-01",
+    createdAt: "2026-09-26",
+    updatedAt: "2026-10-08",
+    problem: "Large runs were slow.",
+    finalDecision: "Launch to small accounts first.",
+    rationale: ["Large-run p95 was 8.4 s. [ZOOM-001]"],
+    alternatives: [{ title: "Delay the release", disposition: "Rejected", rationale: "Small accounts are ready.", artifactIds: ["ZOOM-001"] }],
+    caveats: ["The threshold is provisional."],
+    openQuestions: [],
+    followUps: [{ id: "FU-001", description: "Profile the query plan.", ownerId: "priya-nair", dueDate: "2026-10-14", status: "Open", artifactIds: ["ENG-001"] }],
+    supersedes: [],
+    supersededBy: [],
+    artifactIds: ["ZOOM-001", "ENG-001"],
+  };
+
+  it("requests GET /decisions and returns the decisions", async () => {
+    const urls: string[] = [];
+    const fetchImpl = (async (url: string) => {
+      urls.push(url);
+      return new Response(JSON.stringify([dec]), { status: 200 });
+    }) as unknown as typeof fetch;
+    const loaded = await fetchDecisions(createApiClient({ baseUrl: "/api", fetchImpl }));
+    expect(urls).toEqual(["/api/decisions"]);
+    expect(loaded).toEqual([dec]);
+  });
+
+  it("reports a 5xx as the backend being down", async () => {
+    await expect(fetchDecisions(createApiClient({ fetchImpl: respond(502, "") }))).rejects.toThrow(/unavailable/);
+  });
+
+  it("rejects a response that is not a list of decisions", async () => {
+    await expect(fetchDecisions(createApiClient({ fetchImpl: respond(200, { detail: "nope" }) }))).rejects.toBeInstanceOf(BackendError);
+    await expect(fetchDecisions(createApiClient({ fetchImpl: respond(200, [{ id: "DEC-001" }]) }))).rejects.toBeInstanceOf(BackendError);
+  });
+
+  it("the live source loads decisions over the API and has nothing preloaded", async () => {
+    const source = createLiveCatalogSource({ fetchImpl: respond(200, [dec]) });
+    expect(source.initialDecisions).toBeUndefined();
+    expect(await source.loadDecisions()).toEqual([dec]);
+  });
+
+  it("the seed source is ready immediately with the seeded decisions", async () => {
+    expect(seedCatalogSource.initialDecisions).toEqual(seedDecisions);
+    expect(await seedCatalogSource.loadDecisions()).toEqual(seedDecisions);
+  });
+});
+
+describe("decisions lookup and rich text", () => {
+  const dec: Decision = {
+    id: "DEC-003",
+    title: "Explainability for cash-flow forecasts",
+    projectId: "PRJ-103",
+    status: "Proposed",
+    ownerId: "nadia-brooks",
+    contributorIds: [],
+    approverIds: [],
+    decidedAt: null,
+    createdAt: "2026-10-01",
+    updatedAt: "2026-10-08",
+    problem: "Discovery is not representative.",
+    finalDecision: null,
+    rationale: [],
+    alternatives: [],
+    caveats: [],
+    openQuestions: [],
+    followUps: [],
+    supersedes: [],
+    supersededBy: [],
+    artifactIds: [],
+  };
+  const lookup = buildDecisionsLookup([dec]);
+
+  it("finds a decision by id", () => {
+    expect(lookup.decisionById("DEC-003")).toEqual(dec);
+    expect(lookup.decisionById("DEC-999")).toBeUndefined();
+  });
+
+  it("lets rich text cite decisions the catalog knows", () => {
+    const lookups = buildRichTextLookups([], [dec]);
+    expect(lookups.isDecision("DEC-003")).toBe(true);
+    expect(lookups.isDecision("DEC-001")).toBe(false);
+  });
+});
+
+describe("entities behind cited corpus paths", () => {
+  it("maps a corpus path to its entity", () => {
+    expect(entityForPath("documents/ZOOM-001.md")).toEqual({ kind: "document", id: "ZOOM-001" });
+    expect(entityForPath("decisions/DEC-001.md")).toEqual({ kind: "decision", id: "DEC-001" });
+    expect(entityForPath("people/maya-chen.md")).toEqual({ kind: "person", id: "maya-chen" });
+    expect(entityForPath("notes/todo.md")).toBeNull();
+    expect(entityForPath("documents/archive/ZOOM-001.md")).toBeNull();
+  });
+
+  it("derives related decisions, documents, people and projects from citations", () => {
+    const decision: Decision = {
+      id: "DEC-001", title: "Phased rollout", projectId: "PRJ-101", status: "Approved with follow-up",
+      ownerId: "maya-chen", technicalOwnerId: "priya-nair", contributorIds: [], approverIds: [],
+      decidedAt: "2026-10-01", createdAt: "2026-09-26", updatedAt: "2026-10-08",
+      problem: "p", finalDecision: "d", rationale: [], alternatives: [], caveats: [], openQuestions: [],
+      followUps: [], supersedes: [], supersededBy: [], artifactIds: [],
+    };
+    const document: Document = {
+      id: "ZOOM-001", title: "Load review", type: "Zoom transcript", projectId: "PRJ-101",
+      authorIds: ["maya-chen", "zoe-park"], createdAt: "2026-09-30", decisionIds: ["DEC-001"], summary: "s",
+    };
+    const lookups = {
+      decisionById: (id: string) => (id === "DEC-001" ? decision : undefined),
+      documentById: (id: string) => (id === "ZOOM-001" ? document : undefined),
+    };
+    const related = relatedEntitiesFromCitations(
+      [
+        { path: "documents/ZOOM-001.md", lines: [10, 12] },
+        { path: "decisions/DEC-001.md", lines: [3, 8] },
+        { path: "README.md", lines: [1, 2] },
+      ],
+      lookups,
+    );
+    expect(related.decisions.map((d) => d.id)).toEqual(["DEC-001"]);
+    expect(related.documents.map((d) => d.id)).toEqual(["ZOOM-001"]);
+    expect(related.personIds.sort()).toEqual(["maya-chen", "priya-nair", "zoe-park"]);
+    expect(related.projectIds).toEqual(["PRJ-101"]);
   });
 });

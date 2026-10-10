@@ -2,7 +2,6 @@ import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { decisions } from "@/data/decisions";
 import { useCatalog } from "@/hooks/useCatalog";
 import type { DecisionStatus } from "@/types";
 
@@ -19,7 +18,6 @@ export const EMPTY_FILTERS: DecisionFilterState = { query: "", status: "", proje
 
 const STATUSES: DecisionStatus[] = ["Proposed", "Approved", "Approved with follow-up", "Rejected", "Superseded"];
 
-const ownerIds = [...new Set(decisions.map((d) => d.ownerId))];
 
 export function hasActiveFilters(f: DecisionFilterState): boolean {
   return Object.values(f).some((v) => v !== "");
@@ -31,7 +29,8 @@ interface Props {
 }
 
 export function DecisionFilters({ value, onChange }: Props) {
-  const { personName, projects } = useCatalog();
+  const { personName, projects, decisions } = useCatalog();
+  const ownerIds = [...new Set(decisions.map((d) => d.ownerId))];
   const set = <K extends keyof DecisionFilterState>(key: K, v: DecisionFilterState[K]) => onChange({ ...value, [key]: v });
 
   return (

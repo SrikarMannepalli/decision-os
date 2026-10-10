@@ -4,7 +4,7 @@ import { AnswerSection } from "@/components/AnswerSection";
 import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
-import { decisionById } from "@/data/decisions";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { useIsLg } from "@/hooks/useMediaQuery";
 import { isLiveMode } from "@/services/decisionOSService";
@@ -72,6 +72,7 @@ function AssistantMessage({
 }) {
   const answer = message.answer;
   const { revealContext } = useUI();
+  const { decisionById } = useCatalog();
   const isLg = useIsLg();
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>(0);

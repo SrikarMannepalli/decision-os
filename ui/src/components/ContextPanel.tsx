@@ -5,11 +5,10 @@ import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
 import { PersonLink, ProjectLink } from "@/components/RecordMeta";
 import { Button } from "@/components/ui/button";
-import { decisionById } from "@/data/decisions";
-import { documentById } from "@/data/documents";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useChat } from "@/hooks/useChat";
 import { useUI } from "@/hooks/useUI";
+import { relatedEntitiesFromCitations } from "@/lib/relatedEntities";
 import { formatDate } from "@/lib/format";
 import type { AssistantAnswer, Decision } from "@/types";
 
@@ -35,7 +34,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export function ContextPanelBody() {
   const { active } = useChat();
   const { navigate } = useUI();
-  const { personById, personName } = useCatalog();
+  const { personById, personName, decisionById, documentById } = useCatalog();
   const answer = latestAnswer(active?.messages);
 
   if (!answer) {
@@ -47,15 +46,25 @@ export function ContextPanelBody() {
     );
   }
 
-  const decisions = answer.decisionIds.map((id) => decisionById(id)).filter((d): d is Decision => Boolean(d));
-  const projectIds = [...new Set(decisions.map((d) => d.projectId))];
+  // Live answers cite corpus paths: derive the entities behind them via `entity`
+  // (the same ids the file endpoint reports), then the people and projects those connect to.
+  const cited = answer.sources ? relatedEntitiesFromCitations(answer.sources, { decisionById, documentById }) : null;
+
+  const decisionsById = new Map<string, Decision>();
+  for (const d of [...answer.decisionIds.map((id) => decisionById(id)), ...(cited?.decisions ?? [])]) {
+    if (d) decisionsById.set(d.id, d);
+  }
+  const decisions = [...decisionsById.values()];
+  const projectIds = [...new Set([...decisions.map((d) => d.projectId), ...(cited?.projectIds ?? [])])];
   const followUps = decisions.flatMap((d) => d.followUps.filter((f) => f.status === "Open").map((f) => ({ ...f, decisionId: d.id })));
   const evidenceDocs = answer.evidence.map((e) => ({ ref: e, doc: documentById(e.artifactId) })).filter((x) => x.doc);
+  const citedDocs = cited?.documents ?? [];
+  const personIds = [...new Set([...answer.personIds, ...(cited?.personIds ?? [])])];
 
-  if (decisions.length === 0 && answer.sources) {
+  if (decisions.length === 0 && citedDocs.length === 0 && personIds.length === 0) {
     return (
       <Group title="Cited sources">
-        <CorpusSources sources={answer.sources} heading={false} />
+        <CorpusSources sources={answer.sources ?? []} heading={false} />
       </Group>
     );
   }
@@ -112,10 +121,32 @@ export function ContextPanelBody() {
         </Group>
       ) : null}
 
-      {answer.personIds.length > 0 ? (
+      {citedDocs.length > 0 ? (
+        <Group title="Cited documents">
+          <ul className="space-y-2">
+            {citedDocs.map((doc) => (
+              <li key={doc.id} className="flex items-start gap-2 text-sm">
+                <DocumentTypeIcon type={doc.type} className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
+                <span className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => navigate({ view: "documents", id: doc.id })}
+                    className="cursor-pointer text-left leading-snug hover:text-accent-ink"
+                  >
+                    {doc.title}
+                  </button>
+                  <span className="mt-0.5 block text-xs text-muted">{doc.type}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Group>
+      ) : null}
+
+      {personIds.length > 0 ? (
         <Group title="People involved">
           <ul className="space-y-1.5 text-sm">
-            {answer.personIds.map((id) => (
+            {personIds.map((id) => (
               <li key={id} className="flex items-center gap-2">
                 <PersonLink employeeId={id} />
                 <span className="truncate text-xs text-muted">{personById(id)?.role}</span>

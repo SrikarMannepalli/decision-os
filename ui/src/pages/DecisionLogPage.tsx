@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { decisionById, decisions } from "@/data/decisions";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import type { Decision } from "@/types";
@@ -29,7 +28,7 @@ function matches(d: Decision, f: DecisionFilterState, personName: (id: string) =
 
 export function DecisionLogPage() {
   const { route, navigate } = useUI();
-  const { personName, projectName } = useCatalog();
+  const { personName, projectName, decisions, decisionById } = useCatalog();
   const [filters, setFilters] = useState<DecisionFilterState>(EMPTY_FILTERS);
 
   const visible = useMemo(() => decisions.filter((d) => matches(d, filters, personName, projectName)), [filters, personName, projectName]);

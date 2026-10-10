@@ -1,10 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { decisionById } from "@/data/decisions";
 import { knownArtifactIds } from "@/data/documents";
 import type { RichTextLookups } from "@/lib/richText";
 import { createLiveCatalogSource, seedCatalogSource, type CatalogSource } from "@/services/catalogApi";
 import { isLiveMode } from "@/services/decisionOSService";
-import type { Document, DocumentDetail, Employee, Project } from "@/types";
+import type { Decision, Document, DocumentDetail, Employee, Project } from "@/types";
 
 export type CatalogStatus = "loading" | "ready" | "error";
 
@@ -24,15 +23,19 @@ export interface DocumentsLookup {
   documentById: (id: string) => Document | undefined;
 }
 
-export interface Catalog extends PeopleLookup, ProjectsLookup, DocumentsLookup {
+export interface DecisionsLookup {
+  decisionById: (id: string) => Decision | undefined;
+}
+
+export interface Catalog extends PeopleLookup, ProjectsLookup, DocumentsLookup, DecisionsLookup {
   people: Employee[];
   projects: Project[];
   documents: Document[];
+  decisions: Decision[];
   status: CatalogStatus;
   error: string | null;
   /** Fetch one document's detail (content, bodyStartLine); undefined when unknown. */
   loadDocument: (id: string, signal?: AbortSignal) => Promise<DocumentDetail | undefined>;
-  /** Decisions still come from the seed until their endpoint lands. */
   richTextLookups: RichTextLookups;
 }
 
@@ -59,12 +62,20 @@ export function buildDocumentsLookup(documents: Document[]): DocumentsLookup {
   };
 }
 
+export function buildDecisionsLookup(decisions: Decision[]): DecisionsLookup {
+  const byId = new Map(decisions.map((decision) => [decision.id, decision]));
+  return {
+    decisionById: (id) => byId.get(id),
+  };
+}
+
 /** Which ids a rich-text citation may link to. Unknown documents still resolve through the seed ids. */
-export function buildRichTextLookups(documents: Document[]): RichTextLookups {
+export function buildRichTextLookups(documents: Document[], decisions: Decision[]): RichTextLookups {
   const ids = new Set([...knownArtifactIds, ...documents.map((doc) => doc.id)]);
+  const decisionIds = new Set(decisions.map((decision) => decision.id));
   return {
     isArtifact: (id) => ids.has(id),
-    isDecision: (id) => decisionById(id) !== undefined,
+    isDecision: (id) => decisionIds.has(id),
   };
 }
 
@@ -76,7 +87,8 @@ export function CatalogProvider({ children, source = defaultSource }: { children
   const [people, setPeople] = useState<Employee[]>(source.initialPeople ?? []);
   const [projects, setProjects] = useState<Project[]>(source.initialProjects ?? []);
   const [documents, setDocuments] = useState<Document[]>(source.initialDocuments ?? []);
-  const preloaded = Boolean(source.initialPeople && source.initialProjects && source.initialDocuments);
+  const [decisions, setDecisions] = useState<Decision[]>(source.initialDecisions ?? []);
+  const preloaded = Boolean(source.initialPeople && source.initialProjects && source.initialDocuments && source.initialDecisions);
   const [status, setStatus] = useState<CatalogStatus>(preloaded ? "ready" : "loading");
   const [error, setError] = useState<string | null>(null);
 
@@ -84,11 +96,17 @@ export function CatalogProvider({ children, source = defaultSource }: { children
     if (preloaded) return;
     const controller = new AbortController();
     setStatus("loading");
-    Promise.all([source.loadPeople(controller.signal), source.loadProjects(controller.signal), source.loadDocuments(controller.signal)])
-      .then(([loadedPeople, loadedProjects, loadedDocuments]) => {
+    Promise.all([
+        source.loadPeople(controller.signal),
+        source.loadProjects(controller.signal),
+        source.loadDocuments(controller.signal),
+        source.loadDecisions(controller.signal),
+      ])
+      .then(([loadedPeople, loadedProjects, loadedDocuments, loadedDecisions]) => {
         setPeople(loadedPeople);
         setProjects(loadedProjects);
         setDocuments(loadedDocuments);
+        setDecisions(loadedDecisions);
         setError(null);
         setStatus("ready");
       })
@@ -107,15 +125,17 @@ export function CatalogProvider({ children, source = defaultSource }: { children
       people,
       projects,
       documents,
+      decisions,
       status,
       error,
       loadDocument,
-      richTextLookups: buildRichTextLookups(documents),
+      richTextLookups: buildRichTextLookups(documents, decisions),
       ...buildPeopleLookup(people),
       ...buildProjectsLookup(projects),
       ...buildDocumentsLookup(documents),
+      ...buildDecisionsLookup(decisions),
     }),
-    [people, projects, documents, status, error, loadDocument],
+    [people, projects, documents, decisions, status, error, loadDocument],
   );
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }

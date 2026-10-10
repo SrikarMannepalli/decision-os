@@ -2,13 +2,14 @@ import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { DocumentBody } from "@/components/DocumentBody";
 import { DocumentTypeIcon } from "@/components/DocumentTypeIcon";
 import { PersonLink, ProjectLink } from "@/components/RecordMeta";
-import { decisionById } from "@/data/decisions";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
 import { formatDate } from "@/lib/format";
 import type { DocumentDetail } from "@/types";
 
 export function DocumentDetail({ document }: { document: DocumentDetail }) {
   const { navigate } = useUI();
+  const { decisionById } = useCatalog();
   const decisions = document.decisionIds.flatMap((id) => {
     const d = decisionById(id);
     return d ? [d] : [];
