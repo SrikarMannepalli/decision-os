@@ -1,0 +1,11 @@
+# Architecture decision records
+
+Read this index before choosing a library, a datastore, an API shape, or a workflow. Open a record only when the task touches that decision.
+
+Accepted records stay as written. A later change is a new ADR that supersedes the old one.
+
+| ADR | Title | Status |
+|---|---|---|
+| [0001](0001-verify-script-is-the-completion-gate.md) | `scripts/verify.sh` is the completion gate | accepted |
+
+Copy [template.md](template.md) when you add a record. Number files `NNNN-kebab-title.md` and add a row to this table in the same change.

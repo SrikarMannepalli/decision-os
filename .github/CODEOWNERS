@@ -1,0 +1,5 @@
+# Human review for binding decisions and automation.
+# Replace the handle below with the GitHub login that should approve these paths.
+
+/docs/adr/ @SrikarMannepalli
+/.github/ @SrikarMannepalli
