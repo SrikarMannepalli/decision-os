@@ -1,6 +1,6 @@
 import { AlertTriangle, Check, Copy, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { RichText } from "@/components/RichText";
+import { AnswerMarkdown } from "@/components/AnswerMarkdown";
 import { Button } from "@/components/ui/button";
 import { useUI } from "@/hooks/useUI";
 import { cn } from "@/lib/utils";
@@ -89,9 +89,7 @@ function AssistantMessage({ message }: { message: ChatMessageData }) {
               <AlertTriangle aria-hidden className="h-3.5 w-3.5" /> Not enough evidence
             </p>
           ) : null}
-          <p className="whitespace-pre-line">
-            <RichText text={answer.directAnswer} />
-          </p>
+          <AnswerMarkdown text={answer.directAnswer} />
         </div>
 
         {answer.sources.length > 0 ? <CorpusSources sources={answer.sources} /> : null}
