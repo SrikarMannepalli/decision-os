@@ -37,6 +37,7 @@ function DecisionIdList({ ids }: { ids: string[] }) {
 }
 
 export function DecisionDetail({ decision }: { decision: Decision }) {
+  const { openSource } = useUI();
   const { documentById } = useCatalog();
   const isFinal = decision.finalDecision !== null;
   const docs = decision.artifactIds.map((id) => documentById(id)).filter((d) => d !== undefined);
@@ -170,14 +171,24 @@ export function DecisionDetail({ decision }: { decision: Decision }) {
         <Section title="Supporting evidence">
           <ul className="space-y-2">
             {docs.map((doc) => {
+              const key = doc.excerpts?.[0];
               return (
                 <li key={doc.id} className="rounded-md border border-border px-3 py-2.5 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <DocumentTypeIcon type={doc.type} className="h-4 w-4 text-muted" />
                     <span className="font-medium">{doc.title}</span>
-                    <CitationChip artifactId={doc.id} className="mx-0" />
+                    <CitationChip artifactId={doc.id} excerptId={key?.id} className="mx-0" />
                   </div>
                   <p className="mt-1 text-muted">{doc.summary}</p>
+                  {key ? (
+                    <button
+                      type="button"
+                      onClick={() => openSource({ artifactId: doc.id, excerptId: key.id })}
+                      className="mt-1 cursor-pointer text-left text-accent-ink underline decoration-accent/30 underline-offset-2 hover:decoration-accent"
+                    >
+                      {key.label}
+                    </button>
+                  ) : null}
                 </li>
               );
             })}
