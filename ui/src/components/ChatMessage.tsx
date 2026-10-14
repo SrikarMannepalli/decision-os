@@ -1,8 +1,8 @@
 import { AlertTriangle, Check, Copy, FileSearch, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AnswerMarkdown } from "@/components/AnswerMarkdown";
 import { AnswerSection } from "@/components/AnswerSection";
 import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
-import { RichText } from "@/components/RichText";
 import { Button } from "@/components/ui/button";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
@@ -122,9 +122,7 @@ function AssistantMessage({
               <AlertTriangle aria-hidden className="h-3.5 w-3.5" /> Not enough evidence
             </p>
           ) : null}
-          <p className="whitespace-pre-line">
-            <RichText text={answer.directAnswer} />
-          </p>
+          <AnswerMarkdown text={answer.directAnswer} />
         </div>
 
         {answer.sources && answer.sources.length > 0 ? <CorpusSources sources={answer.sources} /> : null}
