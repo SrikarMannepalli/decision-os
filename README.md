@@ -47,7 +47,7 @@ The UI reads one of two data sources, chosen by `VITE_DATA_SOURCE` in `ui/.env.l
 - `seed` (default): the UI's own data in `ui/src/data`, plus a mock answer engine. No backend needed.
 - `corpus`: the FastAPI backend over `corpus/finflow`.
 
-A `seed` build is plain static files, so it can be hosted without a backend. To serve it from a sub-path (for example a GitHub Pages project site), build with `VITE_BASE=/decision-os/ VITE_DATA_SOURCE=seed npm run build` in `ui/`. Routing is hash-based, so deep links need no server rewrite.
+A `seed` build is plain static files, so it can be hosted without a backend. The app is served from `/decision-os/` by default (locally: http://localhost:5173/decision-os/), which is also what a GitHub Pages project site needs; build with `VITE_DATA_SOURCE=seed npm run build` in `ui/`. Set `VITE_BASE=/` to serve from the root. Routing is hash-based, so deep links need no server rewrite.
 
 `.github/workflows/pages.yml` publishes the seed build to GitHub Pages on every push to `main` (or by hand from the Actions tab). One-time setup: make the repo public if you are on a free plan, then set Settings → Pages → Source to "GitHub Actions". The site lives at `https://<user>.github.io/<repo>/`.
 

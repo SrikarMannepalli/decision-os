@@ -11,7 +11,7 @@ Copy `.env.example` to `.env.local`, set the value, and restart `npm run dev`. `
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173, proxies /api to the API (see below)
+npm run dev        # http://localhost:5173/decision-os/, proxies /api to the API (see below)
 npm run typecheck
 npm test
 npm run build
@@ -19,7 +19,7 @@ npm run build
 
 ## Static hosting
 
-A `seed` build needs no backend. For a sub-path host such as GitHub Pages, set `VITE_BASE` at build time: `VITE_BASE=/decision-os/ VITE_DATA_SOURCE=seed npm run build`. Unset, the base is `/`. Routing is hash-based, so deep links work without a rewrite rule.
+The app is served from `/decision-os/`, so `npm run dev` is at http://localhost:5173/decision-os/ (a bare `/` redirects there). A `seed` build needs no backend and works as-is on a host such as GitHub Pages: `VITE_DATA_SOURCE=seed npm run build`. Set `VITE_BASE=/` to serve from the root instead. Routing is hash-based, so deep links work without a rewrite rule.
 
 ## Running against the backend
 
