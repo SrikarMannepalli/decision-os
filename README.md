@@ -49,6 +49,8 @@ The UI reads one of two data sources, chosen by `VITE_DATA_SOURCE` in `ui/.env.l
 
 A `seed` build is plain static files, so it can be hosted without a backend. To serve it from a sub-path (for example a GitHub Pages project site), build with `VITE_BASE=/decision-os/ VITE_DATA_SOURCE=seed npm run build` in `ui/`. Routing is hash-based, so deep links need no server rewrite.
 
+`.github/workflows/pages.yml` publishes the seed build to GitHub Pages on every push to `main` (or by hand from the Actions tab). One-time setup: make the repo public if you are on a free plan, then set Settings → Pages → Source to "GitHub Actions". The site lives at `https://<user>.github.io/<repo>/`.
+
 To point the UI at the backend, change the following:
 
 1. In `ui/.env.local`, set `VITE_DATA_SOURCE=corpus`, then restart `npm run dev` (Vite reads env vars only at startup). `npm run dev:live` does the same for one run.
