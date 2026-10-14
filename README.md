@@ -39,3 +39,26 @@ scripts/verify.sh
 
 Live backend testing (fresh machine, RouterPlus credentials) is documented in
 `docs/runbooks/testing-the-backend.md`.
+
+## Running the UI: seed data or the backend
+
+The UI reads one of two data sources, chosen by `VITE_DATA_SOURCE` in `ui/.env.local` (copy `ui/.env.example`):
+
+- `seed` (default): the UI's own data in `ui/src/data`, plus a mock answer engine. No backend needed.
+- `corpus`: the FastAPI backend over `corpus/finflow`.
+
+To point the UI at the backend, change the following:
+
+1. In `ui/.env.local`, set `VITE_DATA_SOURCE=corpus`, then restart `npm run dev` (Vite reads env vars only at startup). `npm run dev:live` does the same for one run.
+2. Install and start the API from the repo root, with Python ≥ 3.11 in `.venv`:
+   ```bash
+   .venv/Scripts/python -m pip install -e '.[dev]'    # .venv/bin/ on macOS/Linux
+   DECISIONOS_CORPUS=$PWD/corpus/finflow .venv/Scripts/uvicorn decisionos.main:app --port 8000
+   ```
+   The corpus root is `corpus/finflow`, not `corpus`; the wrong path returns empty lists.
+3. The four catalog pages (Decision Log, Documents, Projects, People) work now. Chat also needs: `cd agent && npm install`, a `~/.pi/agent/models.json` (template in `docs/runbooks/testing-the-backend.md`), and `ROUTERPLUS_API_KEY` exported in the shell that starts uvicorn. Restart the API after setting it.
+4. The dev server proxies `/api` to `http://localhost:8000`. Set `DECISIONOS_API_URL` to use another address.
+
+A static host such as GitHub Pages has no backend, so deploy it with `seed`.
+
+`scripts/dev-live.sh` does steps 1–3 in one command.

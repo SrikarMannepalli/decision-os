@@ -2,7 +2,12 @@
 
 Frontend for DecisionOS, set in the fictional fintech FinFlow. React 19, TypeScript, Vite, Tailwind CSS v4, Radix primitives, Lucide.
 
-It runs against the DecisionOS FastAPI backend — there is no mock data layer. Every page (chat, Decision Log, Documents, Projects, People) reads the API; only chat needs a model key.
+Everything the UI shows (chat, Decision Log, Documents, Projects, People) comes from one of two data sources, chosen by a single flag, `VITE_DATA_SOURCE`:
+
+- `seed` (default): the UI's own bundled data in `src/data` and a mock answer engine. No backend needed.
+- `corpus`: the FastAPI backend reading `corpus/finflow`. Chat also needs `ROUTERPLUS_API_KEY`.
+
+Copy `.env.example` to `.env.local`, set the value, and restart `npm run dev`. `npm run dev:live` starts the UI on `corpus`.
 
 ```bash
 npm install

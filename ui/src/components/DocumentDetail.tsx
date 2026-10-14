@@ -67,6 +67,22 @@ export function DocumentDetail({ document }: { document: DocumentDetail }) {
           </ul>
         </section>
 
+        {document.excerpts && document.excerpts.length > 0 ? (
+          <section aria-labelledby="doc-key-excerpts">
+            <h3 id="doc-key-excerpts" className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
+              Key excerpts
+            </h3>
+            <ul className="space-y-3">
+              {document.excerpts.map((e) => (
+                <li key={e.id} className="rounded-md border border-border bg-background px-3 py-2.5">
+                  <p className="text-xs font-medium text-foreground">{e.label}</p>
+                  <blockquote className="mt-1.5 whitespace-pre-line border-l-2 border-accent/40 pl-3 text-sm text-muted">{e.text}</blockquote>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         <section aria-labelledby="doc-full-content">
           <h3 id="doc-full-content" className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
             Full document

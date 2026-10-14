@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ContextPanel, ContextPanelBody } from "@/components/ContextPanel";
 import { Logo, SidebarContent } from "@/components/Sidebar";
 import { CorpusSourceView } from "@/components/CorpusSourceView";
+import { SourceDrawer } from "@/components/SourceDrawer";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useChat } from "@/hooks/useChat";
@@ -96,6 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Sheet>
       ) : null}
 
+      <SourceDrawer />
       <CorpusSourceView />
     </div>
   );

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { seededConversations } from "@/data/conversations";
 import { BackendError } from "@/services/apiClient";
-import { queryDecisionOS } from "@/services/decisionOSService";
+import { isLiveMode, queryDecisionOS } from "@/services/decisionOSService";
 import type { ChatMessage, Conversation } from "@/types";
 
 interface ChatContextValue {
@@ -22,7 +23,7 @@ const nowIso = () => new Date().toISOString();
 const titleFrom = (text: string) => (text.length > 48 ? `${text.slice(0, 45).trimEnd()}…` : text);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(isLiveMode ? [] : seededConversations);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [thinkingIds, setThinkingIds] = useState<ReadonlySet<string>>(new Set());
   const conversationsRef = useRef(conversations);
@@ -55,7 +56,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           content:
             err instanceof BackendError
               ? err.message
-              : "Something went wrong while searching the corpus. Your question was not answered.",
+              : "Something went wrong while searching the FinFlow documents. Your question was not answered.",
           createdAt: nowIso(),
           error: true,
         };

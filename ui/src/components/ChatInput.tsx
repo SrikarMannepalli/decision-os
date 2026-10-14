@@ -1,7 +1,8 @@
 import { ArrowUp, FileSearch } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { useCatalog } from "@/hooks/useCatalog";
+import { documents } from "@/data/documents";
+import { isLiveMode } from "@/services/decisionOSService";
 
 interface ChatInputProps {
   onSubmit: (text: string) => void;
@@ -14,7 +15,6 @@ export const CHAT_PLACEHOLDER = "Ask why we made a decision, what changed, or wh
 export function ChatInput({ onSubmit, disabled, autoFocus }: ChatInputProps) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { documents } = useCatalog();
 
   useEffect(() => {
     const el = ref.current;
@@ -67,7 +67,7 @@ export function ChatInput({ onSubmit, disabled, autoFocus }: ChatInputProps) {
       <div className="flex items-center justify-between gap-2 px-3 pb-2.5 pt-1">
         <span className="inline-flex items-center gap-1.5 text-xs text-muted">
           <FileSearch aria-hidden className="h-3.5 w-3.5" />
-          {documents.length > 0 ? `Searching ${documents.length} corpus documents` : "Searching the DecisionOS corpus"}
+          {isLiveMode ? "Searching the DecisionOS corpus" : `Searching ${documents.length} FinFlow documents`}
         </span>
         <Button type="submit" size="icon" disabled={disabled || value.trim().length === 0} aria-label="Send question">
           <ArrowUp aria-hidden className="h-4 w-4" />

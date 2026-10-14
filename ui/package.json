@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:live": "VITE_DATA_SOURCE=corpus vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",

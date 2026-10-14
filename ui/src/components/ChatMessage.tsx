@@ -1,8 +1,13 @@
-import { AlertTriangle, Check, Copy, RotateCw } from "lucide-react";
+import { AlertTriangle, Check, Copy, FileSearch, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AnswerMarkdown } from "@/components/AnswerMarkdown";
+import { AnswerSection } from "@/components/AnswerSection";
+import { DecisionStatusBadge } from "@/components/DecisionStatusBadge";
 import { Button } from "@/components/ui/button";
+import { useCatalog } from "@/hooks/useCatalog";
 import { useUI } from "@/hooks/useUI";
+import { useIsLg } from "@/hooks/useMediaQuery";
+import { isLiveMode } from "@/services/decisionOSService";
 import { cn } from "@/lib/utils";
 import { formatLines } from "@/lib/format";
 import type { ChatMessage as ChatMessageData, CorpusCitation } from "@/types";
@@ -10,11 +15,12 @@ import type { ChatMessage as ChatMessageData, CorpusCitation } from "@/types";
 interface ChatMessageProps {
   message: ChatMessageData;
   isLast: boolean;
+  onFollowUp: (question: string) => void;
   onRetry: () => void;
   disabled: boolean;
 }
 
-export function ChatMessage({ message, isLast, onRetry, disabled }: ChatMessageProps) {
+export function ChatMessage({ message, isLast, onFollowUp, onRetry, disabled }: ChatMessageProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
@@ -23,7 +29,7 @@ export function ChatMessage({ message, isLast, onRetry, disabled }: ChatMessageP
     );
   }
   if (message.error) return <ErrorMessage message={message} onRetry={onRetry} disabled={disabled || !isLast} />;
-  return <AssistantMessage message={message} />;
+  return <AssistantMessage message={message} isLast={isLast} onFollowUp={onFollowUp} disabled={disabled} />;
 }
 
 function AssistantAvatar() {
@@ -53,8 +59,21 @@ function ErrorMessage({ message, onRetry, disabled }: { message: ChatMessageData
   );
 }
 
-function AssistantMessage({ message }: { message: ChatMessageData }) {
+function AssistantMessage({
+  message,
+  isLast,
+  onFollowUp,
+  disabled,
+}: {
+  message: ChatMessageData;
+  isLast: boolean;
+  onFollowUp: (q: string) => void;
+  disabled: boolean;
+}) {
   const answer = message.answer;
+  const { revealContext } = useUI();
+  const { decisionById } = useCatalog();
+  const isLg = useIsLg();
   const [copied, setCopied] = useState(false);
   const timer = useRef<number>(0);
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -77,6 +96,20 @@ function AssistantMessage({ message }: { message: ChatMessageData }) {
     <article className="flex gap-3" aria-label="Decision OS answer">
       <AssistantAvatar />
       <div className="min-w-0 flex-1">
+        {answer.decisionIds.length > 0 && answer.decisionIds.length <= 3 ? (
+          <ul className="mb-2 flex flex-wrap gap-1.5" aria-label="Decisions referenced">
+            {answer.decisionIds.map((id) => {
+              const d = decisionById(id);
+              return d ? (
+                <li key={id} className="inline-flex items-center gap-1.5 text-xs text-muted">
+                  <span className="font-mono">{id}</span>
+                  <DecisionStatusBadge status={d.status} />
+                </li>
+              ) : null;
+            })}
+          </ul>
+        ) : null}
+
         <div
           className={cn(
             "text-[15px] leading-relaxed",
@@ -92,14 +125,40 @@ function AssistantMessage({ message }: { message: ChatMessageData }) {
           <AnswerMarkdown text={answer.directAnswer} />
         </div>
 
-        {answer.sources.length > 0 ? <CorpusSources sources={answer.sources} /> : null}
+        {answer.sources && answer.sources.length > 0 ? <CorpusSources sources={answer.sources} /> : null}
+
+        {answer.sections.map((section) => (
+          <AnswerSection key={`${section.kind}-${section.title}`} section={section} />
+        ))}
 
         <div className="mt-4 flex flex-wrap items-center gap-1">
           <Button variant="ghost" size="sm" onClick={copy} aria-label="Copy answer">
             {copied ? <Check aria-hidden className="h-3.5 w-3.5 text-ok" /> : <Copy aria-hidden className="h-3.5 w-3.5" />}
             {copied ? "Copied" : "Copy answer"}
           </Button>
+          {answer.evidence.length > 0 ? (
+            <Button variant="ghost" size="sm" onClick={() => revealContext(isLg)}>
+              <FileSearch aria-hidden className="h-3.5 w-3.5" />
+              Inspect sources ({answer.evidence.length})
+            </Button>
+          ) : null}
         </div>
+
+        {isLast && answer.suggestions.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Suggested follow-up questions">
+            {answer.suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                disabled={disabled}
+                onClick={() => onFollowUp(s)}
+                className="cursor-pointer rounded-full border border-border bg-surface px-3 py-1 text-xs text-foreground hover:border-accent/40 hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -143,7 +202,7 @@ export function ThinkingIndicator() {
             />
           ))}
         </span>
-        Searching the corpus…
+        {isLiveMode ? "Searching the corpus…" : "Searching FinFlow documents…"}
       </div>
     </div>
   );
