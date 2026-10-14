@@ -17,6 +17,10 @@ npm test
 npm run build
 ```
 
+## Static hosting
+
+A `seed` build needs no backend. For a sub-path host such as GitHub Pages, set `VITE_BASE` at build time: `VITE_BASE=/decision-os/ VITE_DATA_SOURCE=seed npm run build`. Unset, the base is `/`. Routing is hash-based, so deep links work without a rewrite rule.
+
 ## Running against the backend
 
 One command does the whole setup (venv, npm installs, `~/.pi/agent/models.json` if absent, both servers). It needs only `ROUTERPLUS_API_KEY`, and must not be run with sudo:

@@ -47,6 +47,8 @@ The UI reads one of two data sources, chosen by `VITE_DATA_SOURCE` in `ui/.env.l
 - `seed` (default): the UI's own data in `ui/src/data`, plus a mock answer engine. No backend needed.
 - `corpus`: the FastAPI backend over `corpus/finflow`.
 
+A `seed` build is plain static files, so it can be hosted without a backend. To serve it from a sub-path (for example a GitHub Pages project site), build with `VITE_BASE=/decision-os/ VITE_DATA_SOURCE=seed npm run build` in `ui/`. Routing is hash-based, so deep links need no server rewrite.
+
 To point the UI at the backend, change the following:
 
 1. In `ui/.env.local`, set `VITE_DATA_SOURCE=corpus`, then restart `npm run dev` (Vite reads env vars only at startup). `npm run dev:live` does the same for one run.
